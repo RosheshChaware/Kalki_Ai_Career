@@ -16,6 +16,26 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
+// Custom highlighted marker icon (orange/gold)
+const selectedIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+const defaultIcon = new L.Icon({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 // Component to handle map view updates
 const MapUpdater = ({ center }) => {
   const map = useMap();
@@ -27,7 +47,7 @@ const MapUpdater = ({ center }) => {
   return null;
 };
 
-const MapComponent = ({ userLocation, colleges }) => {
+const MapComponent = ({ userLocation, colleges, onMarkerClick, selectedCollegeId }) => {
   return (
     <div className="w-full h-full relative group">
       <MapContainer 
@@ -61,8 +81,21 @@ const MapComponent = ({ userLocation, colleges }) => {
             college.lng
           );
 
+          const isSelected = selectedCollegeId === college.id;
+
           return (
-            <Marker key={college.id} position={[college.lat, college.lng]}>
+            <Marker 
+              key={college.id} 
+              position={[college.lat, college.lng]}
+              icon={isSelected ? selectedIcon : defaultIcon}
+              eventHandlers={{
+                click: () => {
+                  if (onMarkerClick) {
+                    onMarkerClick(college, distance);
+                  }
+                }
+              }}
+            >
               <Popup className="custom-popup">
                 <div className="p-1">
                   <h3 className="font-bold text-background mb-1">{college.name}</h3>
@@ -104,7 +137,8 @@ const MapComponent = ({ userLocation, colleges }) => {
           color: white !important;
           border-bottom: 1px solid rgba(255,255,255,0.1) !important;
         }
-      `}</style>
+      `}
+      </style>
     </div>
   );
 };
