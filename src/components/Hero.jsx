@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 
-const Hero = ({ onStartAssessment }) => {
+const Hero = ({ onStartJourney }) => {
   return (
     <section className="flex flex-col items-center justify-center text-center px-4 py-24 min-h-[500px]">
       <div className="inline-flex items-center justify-center px-3 py-1 mb-8 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20">
@@ -18,7 +18,7 @@ const Hero = ({ onStartAssessment }) => {
       
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <button 
-          onClick={onStartAssessment}
+          onClick={onStartJourney}
           className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-medium px-6 py-3 rounded-lg w-full sm:w-auto transition-colors"
         >
           <span>Start Your Journey</span>

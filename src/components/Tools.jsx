@@ -1,7 +1,7 @@
 import React from 'react';
-import { Book, GraduationCap, TrendingUp, NotebookTabs } from 'lucide-react';
+import { Book, GraduationCap, TrendingUp, NotebookTabs, Brain } from 'lucide-react';
 
-const Tools = ({ onOpenExplorer, onOpenCareerOutcomes }) => {
+const Tools = ({ onOpenExplorer, onOpenCareerOutcomes, onOpenLearningPage }) => {
   const tools = [
     {
       icon: <Book className="w-6 h-6 text-primary" />,
@@ -22,6 +22,12 @@ const Tools = ({ onOpenExplorer, onOpenCareerOutcomes }) => {
       onClick: onOpenCareerOutcomes
     },
     {
+      icon: <Brain className="w-6 h-6 text-primary" />,
+      title: "Learning Profile",
+      description: "View your AI-powered personalized learning roadmap, performance analysis, and smart recommendations.",
+      onClick: onOpenLearningPage
+    },
+    {
       icon: <NotebookTabs className="w-6 h-6 text-primary" />,
       title: "Resource Library",
       description: "Access free e-books, study materials, and skill development resources to support your journey.",
@@ -38,7 +44,7 @@ const Tools = ({ onOpenExplorer, onOpenCareerOutcomes }) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 w-full max-w-7xl">
         {tools.map((tool, index) => (
           <div 
             key={index} 
