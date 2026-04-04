@@ -16,6 +16,7 @@ import StudyMaterialsPage from './components/StudyMaterialsPage';
 import PracticeQuestionsPage from './components/PracticeQuestionsPage';
 import PyqPracticePage from './components/PyqPracticePage';
 import AdaptiveQuizPage from './components/AdaptiveQuizPage';
+import PixelSpotlightBackground from './components/backgrounds/PixelSpotlightBackground';
 
 function App() {
   const { user } = useAuth();
@@ -182,39 +183,39 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] -z-10" />
-      <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px] -z-10" />
-
-      <Navbar
-        onStartAssessment={openAssessment}
-        onOpenExplorer={openCollegeExplorer}
-        onOpenCareerOutcomes={openCareerOutcomes}
-        onOpenLearningPage={openLearningPage}
-        onOpenSignIn={() => openAuth('signin')}
-        onOpenSignUp={() => openAuth('signup')}
-      />
-      <Hero onStartJourney={openLearningPage} />
-      <FeatureCards onStartAssessment={openAssessment} />
-      <Statistics />
-      <Tools 
-        onOpenExplorer={openCollegeExplorer} 
-        onOpenCareerOutcomes={openCareerOutcomes} 
-        onOpenLearningPage={openLearningPage}
-        onOpenStudyMaterials={openStudyMaterials}
-      />
-
-      {/* Auth modal */}
-      {showAuth && (
-        <AuthPage
-          defaultMode={authMode}
-          onSuccess={() => {
-            closeAuth();
-          }}
-          onClose={closeAuth}
+    <div className="min-h-screen w-full relative overflow-hidden bg-black">
+      <PixelSpotlightBackground />
+      <div className="relative z-10 flex flex-col min-h-screen">
+        <Navbar
+          onStartAssessment={openAssessment}
+          onOpenExplorer={openCollegeExplorer}
+          onOpenCareerOutcomes={openCareerOutcomes}
+          onOpenLearningPage={openLearningPage}
+          onOpenSignIn={() => openAuth('signin')}
+          onOpenSignUp={() => openAuth('signup')}
         />
-      )}
+        <Hero onStartJourney={openLearningPage} />
+        
+        <FeatureCards onStartAssessment={openAssessment} />
+        <Statistics />
+        <Tools 
+          onOpenExplorer={openCollegeExplorer} 
+          onOpenCareerOutcomes={openCareerOutcomes} 
+          onOpenLearningPage={openLearningPage}
+          onOpenStudyMaterials={openStudyMaterials}
+        />
+
+        {/* Auth modal */}
+        {showAuth && (
+          <AuthPage
+            defaultMode={authMode}
+            onSuccess={() => {
+              closeAuth();
+            }}
+            onClose={closeAuth}
+          />
+        )}
+      </div>
     </div>
   );
 }
