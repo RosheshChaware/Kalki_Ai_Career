@@ -9,8 +9,13 @@ import CollegeExplorerPage from './components/CollegeExplorerPage';
 import AuthPage from './components/auth/AuthPage';
 import { useAuth } from './context/AuthContext';
 import CareerOutcomesPage from './components/CareerOutcomesPage';
+import CareerDetailsPage from './components/CareerDetailsPage';
 import PersonalizedLearningPage from './components/PersonalizedLearningPage';
 import OnboardingFlow from './components/OnboardingFlow';
+import StudyMaterialsPage from './components/StudyMaterialsPage';
+import PracticeQuestionsPage from './components/PracticeQuestionsPage';
+import PyqPracticePage from './components/PyqPracticePage';
+import AdaptiveQuizPage from './components/AdaptiveQuizPage';
 
 function App() {
   const { user } = useAuth();
@@ -18,7 +23,12 @@ function App() {
   const [showAssessment, setShowAssessment] = useState(false);
   const [showCollegeExplorer, setShowCollegeExplorer] = useState(false);
   const [showCareerOutcomes, setShowCareerOutcomes] = useState(false);
+  const [showCareerDetails, setShowCareerDetails] = useState(false);
   const [showLearningPage, setShowLearningPage] = useState(false);
+  const [showStudyMaterials, setShowStudyMaterials] = useState(false);
+  const [showPracticeQuestions, setShowPracticeQuestions] = useState(false);
+  const [showPyq, setShowPyq] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('signin');
@@ -47,6 +57,21 @@ function App() {
 
   const openCareerOutcomes = () => setShowCareerOutcomes(true);
   const closeCareerOutcomes = () => setShowCareerOutcomes(false);
+
+  const openCareerDetails = () => setShowCareerDetails(true);
+  const closeCareerDetails = () => setShowCareerDetails(false);
+
+  const openStudyMaterials = () => setShowStudyMaterials(true);
+  const closeStudyMaterials = () => setShowStudyMaterials(false);
+
+  const openPracticeQuestions = () => setShowPracticeQuestions(true);
+  const closePracticeQuestions = () => setShowPracticeQuestions(false);
+
+  const openPyq = () => setShowPyq(true);
+  const closePyq = () => setShowPyq(false);
+
+  const openQuiz = () => setShowQuiz(true);
+  const closeQuiz = () => setShowQuiz(false);
 
   const pendingRedirect = useRef(null);
 
@@ -100,6 +125,32 @@ function App() {
     return <CareerOutcomesPage onClose={closeCareerOutcomes} />;
   }
 
+  if (showCareerDetails) {
+    return <CareerDetailsPage onClose={closeCareerDetails} />;
+  }
+
+  if (showStudyMaterials) {
+    return <StudyMaterialsPage onClose={closeStudyMaterials} aiResult={aiResult} />;
+  }
+
+  if (showPyq) {
+    return <PyqPracticePage onClose={closePyq} aiResult={aiResult} />;
+  }
+
+  if (showQuiz) {
+    return <AdaptiveQuizPage onClose={closeQuiz} aiResult={aiResult} />;
+  }
+
+  if (showPracticeQuestions) {
+    return (
+      <PracticeQuestionsPage 
+        onClose={closePracticeQuestions} 
+        onOpenPyq={openPyq} 
+        onOpenQuiz={openQuiz}
+      />
+    );
+  }
+
   if (showOnboarding) {
     return (
       <OnboardingFlow
@@ -118,6 +169,9 @@ function App() {
     return <PersonalizedLearningPage
       aiResult={aiResult}          // pass fresh result or null for returning users
       onClose={closeLearningPage}
+      onOpenStudyMaterials={openStudyMaterials}
+      onOpenPracticeQuestions={openPracticeQuestions}
+      onOpenCareerDetails={openCareerDetails}
       onReanalyze={() => {
         if (user) localStorage.removeItem(`onboarding_complete_${user.uid}`);
         setAiResult(null);          // clear cached result so dashboard re-fetches
@@ -148,6 +202,7 @@ function App() {
         onOpenExplorer={openCollegeExplorer} 
         onOpenCareerOutcomes={openCareerOutcomes} 
         onOpenLearningPage={openLearningPage}
+        onOpenStudyMaterials={openStudyMaterials}
       />
 
       {/* Auth modal */}

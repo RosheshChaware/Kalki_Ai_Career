@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { db } from '../firebase';
 import { doc, setDoc, collection } from 'firebase/firestore';
+import { GraduationCap, Brain, Clock, BarChart2 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
 //  Inline SVG Icons
@@ -47,10 +48,10 @@ const LOADING_STEPS = [
 ];
 
 const STEPS = [
-  { id: 1, title: 'Academic Profile',   subtitle: 'Tell us your class, stream, and goals',              icon: '🎯' },
-  { id: 2, title: 'Strengths & Gaps',   subtitle: 'Where you shine and where you struggle',             icon: '💡' },
-  { id: 3, title: 'Study Habits',       subtitle: 'How and when you study best',                        icon: '📚' },
-  { id: 4, title: 'Performance Data',   subtitle: 'Your recent scores and test results',                icon: '📊' },
+  { id: 1, title: 'Academic Profile',   subtitle: 'Tell us your class, stream, and goals',              icon: GraduationCap },
+  { id: 2, title: 'Strengths & Gaps',   subtitle: 'Where you shine and where you struggle',             icon: Brain },
+  { id: 3, title: 'Study Habits',       subtitle: 'How and when you study best',                        icon: Clock },
+  { id: 4, title: 'Performance Data',   subtitle: 'Your recent scores and test results',                icon: BarChart2 },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -65,10 +66,11 @@ const Select = ({ label, value, onChange, options, placeholder }) => (
     <Label>{label}</Label>
     <div className="relative">
       <select value={value} onChange={e => onChange(e.target.value)}
-        className="w-full bg-[#1f2937]/50 border border-[#1f2937] rounded-xl px-4 py-3.5 text-sm text-gray-200 appearance-none
+        style={{ colorScheme: 'dark' }}
+        className="w-full bg-[#111827] border border-[#1f2937] rounded-xl px-4 py-3.5 text-sm text-gray-200 appearance-none
           focus:outline-none focus:border-indigo-500/50 hover:border-[#374151] transition-all cursor-pointer">
-        <option value="" disabled>{placeholder || 'Select...'}</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
+        <option value="" disabled style={{ background: '#111827', color: '#9ca3af' }}>{placeholder || 'Select...'}</option>
+        {options.map(o => <option key={o} value={o} style={{ background: '#111827', color: '#e5e7eb' }}>{o}</option>)}
       </select>
       <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
     </div>
@@ -321,6 +323,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
           };
           
           localStorage.setItem(`onboarding_complete_${uid}`, 'true');
+          localStorage.setItem('userProfile', JSON.stringify({ goal: enrichedData.targetGoal }));
           onComplete({ aiOutput: mockOutput, inputData: enrichedData, sessionId, uid });
           return;
         }
@@ -334,6 +337,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
       await new Promise(r => setTimeout(r, 600));
 
       localStorage.setItem(`onboarding_complete_${uid}`, 'true');
+      localStorage.setItem('userProfile', JSON.stringify({ goal: enrichedData.targetGoal }));
       onComplete({ aiOutput, inputData: enrichedData, sessionId, uid });
 
       // Background Firestore save
@@ -384,12 +388,12 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
                   done    ? 'bg-[#1f2937]/30 border border-transparent text-gray-400 hover:bg-[#1f2937]/50' :
                   'text-gray-600 cursor-default border border-transparent'
                 }`}>
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-lg shrink-0 border transition-all ${
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
                   done   ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                  active ? 'bg-indigo-500/20 border-indigo-500/40' :
-                  'bg-white/5 border-transparent'
+                  active ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400' :
+                  'bg-white/5 border-transparent text-gray-600'
                 }`}>
-                  {done ? <CheckIcon /> : s.icon}
+                  {done ? <CheckIcon /> : <s.icon size={18} strokeWidth={1.8} />}
                 </div>
                 <div className="min-w-0">
                   <p className={`text-sm font-bold truncate ${active ? 'text-indigo-100' : ''}`}>{s.title}</p>

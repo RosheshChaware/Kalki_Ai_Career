@@ -16,7 +16,8 @@ import {
   Zap, 
   AlertTriangle, 
   TrendingUp, 
-  BookOpen, 
+  BookOpen,
+  ClipboardList,
   LogOut,
   Sparkles,
   Bot,
@@ -33,8 +34,7 @@ import CareerPathView from './CareerPathView';
 import SettingsView from './SettingsView';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981'];
-
-const PersonalizedLearningPage = ({ onClose, onReanalyze, aiResult: freshResult }) => {
+const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, onOpenPracticeQuestions, onOpenCareerDetails, aiResult: freshResult }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(!freshResult);
   const [data, setData] = useState(freshResult || null);
@@ -490,30 +490,65 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, aiResult: freshResult 
               </section>
 
               {/* ── ROW 5: SMART RECOMMENDATIONS ── */}
-              <section className="pb-8">
-                <h2 className="font-bold text-white mb-5 flex items-center gap-2">
-                  <BookOpen size={18} className="text-green-400" /> Smart Recommendations
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  <div className="bg-[#111116] rounded-2xl p-6 border border-[#ffffff0A]">
-                    <h3 className="font-bold text-white mb-1">Study Materials</h3>
-                    <p className="text-xs text-gray-400 mb-4">Curated based on your learning style.</p>
-                    <button className="w-full py-2.5 rounded-lg bg-[#1C1C24] hover:bg-[#252530] text-sm font-medium transition-colors border border-[#ffffff0A]">
+              <section className="relative bg-[#111116]/80 backdrop-blur-sm border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] rounded-2xl p-8 mb-8 mt-2">
+                <style>{`
+                  @keyframes floatBot {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-6px); }
+                  }
+                `}</style>
+                
+                {/* AI Visual Element */}
+                <div 
+                  className="absolute top-4 right-4 text-indigo-400/50 hover:text-indigo-300 transition-all duration-300 hover:drop-shadow-[0_0_12px_rgba(99,102,241,0.8)] group cursor-help z-20" 
+                  style={{ animation: 'floatBot 3s ease-in-out infinite' }}
+                >
+                  <Bot size={26} />
+                  
+                  {/* Tooltip */}
+                  <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300 bottom-full right-0 mb-3 w-max px-3 py-2 bg-[#1C1C24]/90 backdrop-blur border border-[#ffffff1A] rounded-lg shadow-xl text-xs text-gray-200 pointer-events-none whitespace-nowrap">
+                    AI Recommendations powered by Smart Engine
+                    {/* Tooltip Arrow pointing down */}
+                    <div className="absolute top-full right-3 -mt-[1px] border-solid border-t-[#ffffff1A] border-t-8 border-x-transparent border-x-8 border-b-0 w-0 h-0" />
+                    <div className="absolute top-full right-[13px] -mt-[2px] border-solid border-t-[#1C1C24] border-t-[6px] border-x-transparent border-x-[6px] border-b-0 w-0 h-0" />
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Lightbulb size={22} className="text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" /> Smart Recommendations
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">Focused action outputs driven by your performance AI</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mix-blend-lighten">
+                  {/* Study Materials */}
+                  <div className="bg-[#1C1C24]/60 rounded-xl p-6 border border-[#ffffff0A] hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(79,70,229,0.1)] transition-all duration-300">
+                    <h3 className="font-bold text-white text-lg mb-2 flex items-center gap-2">
+                      <BookOpen size={20} className="text-indigo-400 shrink-0" />
+                      Study Materials
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-6 truncate">Curated dynamically based on your learning style.</p>
+                    <button 
+                      onClick={onOpenStudyMaterials}
+                      className="w-full py-3 rounded-lg bg-[#252530]/80 hover:bg-indigo-600/10 hover:text-indigo-300 font-semibold transition-all border border-transparent hover:border-indigo-500/30 text-gray-300 active:scale-95"
+                    >
                       View Resources
                     </button>
                   </div>
-                  <div className="bg-[#111116] rounded-2xl p-6 border border-[#ffffff0A]">
-                    <h3 className="font-bold text-white mb-1">Practice Questions</h3>
-                    <p className="text-xs text-gray-400 mb-4">Targeting your key weakness: {ai.weakSubjects?.[0]?.subject || 'N/A'}</p>
-                    <button className="w-full py-2.5 rounded-lg bg-[#1C1C24] hover:bg-[#252530] text-sm font-medium transition-colors border border-[#ffffff0A]">
+
+                  {/* Practice Questions */}
+                  <div className="bg-[#1C1C24]/60 rounded-xl p-6 border border-[#ffffff0A] hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(79,70,229,0.1)] transition-all duration-300">
+                    <h3 className="font-bold text-white text-lg mb-2 flex items-center gap-2">
+                      <ClipboardList size={20} className="text-indigo-400 shrink-0" />
+                      Practice Questions
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-6 truncate">Targeting your key weakness: {ai.weakSubjects?.[0]?.subject || 'Identified Gaps'}.</p>
+                    <button 
+                      onClick={onOpenPracticeQuestions}
+                      className="w-full py-3 rounded-lg bg-[#252530]/80 hover:bg-indigo-600/10 hover:text-indigo-300 font-semibold transition-all border border-transparent hover:border-indigo-500/30 text-gray-300 active:scale-95"
+                    >
                       Start Practice
-                    </button>
-                  </div>
-                  <div className="bg-[#111116] rounded-2xl p-6 border border-[#ffffff0A]">
-                    <h3 className="font-bold text-white mb-1">Career Alignments</h3>
-                    <p className="text-xs text-gray-400 mb-4">Matching: {ai.careerSuggestions?.[0]?.career || 'Discover roles'}</p>
-                    <button className="w-full py-2.5 rounded-lg bg-[#1C1C24] hover:bg-[#252530] text-sm font-medium transition-colors border border-[#ffffff0A]">
-                      Explore Careers
                     </button>
                   </div>
                 </div>

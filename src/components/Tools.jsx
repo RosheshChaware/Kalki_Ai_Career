@@ -1,7 +1,7 @@
 import React from 'react';
 import { Book, GraduationCap, TrendingUp, NotebookTabs, Brain } from 'lucide-react';
 
-const Tools = ({ onOpenExplorer, onOpenCareerOutcomes, onOpenLearningPage }) => {
+const Tools = ({ onOpenExplorer, onOpenCareerOutcomes, onOpenLearningPage, onOpenStudyMaterials }) => {
   const tools = [
     {
       icon: <Book className="w-6 h-6 text-primary" />,
@@ -31,7 +31,7 @@ const Tools = ({ onOpenExplorer, onOpenCareerOutcomes, onOpenLearningPage }) => 
       icon: <NotebookTabs className="w-6 h-6 text-primary" />,
       title: "Resource Library",
       description: "Access free e-books, study materials, and skill development resources to support your journey.",
-      onClick: null
+      onClick: onOpenStudyMaterials
     }
   ];
 
