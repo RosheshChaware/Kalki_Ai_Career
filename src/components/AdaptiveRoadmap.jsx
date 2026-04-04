@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Target, CheckCircle2, Circle, MessageSquare, Send, Upload, RefreshCw, AlertCircle, FileText } from 'lucide-react';
-import { db } from '../firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { Target, CheckCircle2, Circle, MessageSquare, Send, RefreshCw, AlertCircle, FileText } from 'lucide-react';
 
 const AdaptiveRoadmap = ({ aiResult, user }) => {
   const [roadmap, setRoadmap] = useState([]);
@@ -60,15 +58,22 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
         }
       };
 
-      const res = await fetch('http://localhost:5000/api/v1/roadmap/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
       const DEV_MODE = true;
+      let res;
+      let errData = {};
+      try {
+        res = await fetch('http://localhost:5000/api/v1/roadmap/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) errData = await res.json().catch(() => ({}));
+      } catch (networkErr) {
+        res = { ok: false, status: 'Network Error' };
+        errData = { error: 'Failed to fetch' };
+      }
+      
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
         console.error(`[API ERROR /roadmap/update] Status: ${res.status}`, errData);
         if (DEV_MODE) {
             console.warn("DEV_MODE active: Using fallback roadmap mock data.");
@@ -108,19 +113,26 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
     setChatLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/v1/roadmap/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: chatInput,
-          history: chatHistory,
-          context: { focus: roadmap.find(r => r.status === 'in-progress')?.title || 'General', weakness: aiResult?.weakSubjects?.[0]?.subject }
-        })
-      });
-      
       const DEV_MODE = true;
+      let res;
+      let errData = {};
+      try {
+        res = await fetch('http://localhost:5000/api/v1/roadmap/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: chatInput,
+            history: chatHistory,
+            context: { focus: roadmap.find(r => r.status === 'in-progress')?.title || 'General', weakness: aiResult?.weakSubjects?.[0]?.subject }
+          })
+        });
+        if (!res.ok) errData = await res.json().catch(() => ({}));
+      } catch (networkErr) {
+        res = { ok: false, status: 'Network Error' };
+        errData = { error: 'Failed to fetch' };
+      }
+      
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
         console.error(`[API ERROR /roadmap/chat] Status: ${res.status}`, errData);
         setChatHistory([
            ...newChat, 
@@ -155,7 +167,7 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
         
         {/* Dynamic Update Box */}
         <div className="bg-[#111116] border border-[#ffffff0A] rounded-2xl p-6 shadow-md shrink-0">
-          <h2 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><Target size={20} className="text-indigo-400"/> Update & Adapt Roadmap</h2>
+          <h2 className="text-white font-bold text-lg mb-4 flex items-center gap-2"><Target size={20} className="text-indigo-400"/> Update &amp; Adapt Roadmap</h2>
           <p className="text-sm text-gray-400 mb-4">Tell the AI how you are doing or input a recent test score to re-calibrate your learning path automatically.</p>
           
           <div className="flex flex-col md:flex-row gap-4 mb-4">
@@ -180,7 +192,7 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
             disabled={loading || (!progressInput && !testScore)}
             className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-indigo-600/20">
             {loading ? <RefreshCw size={16} className="animate-spin" /> : <RefreshCw size={16} />} 
-            Analyze & Adapt Path
+            Analyze &amp; Adapt Path
           </button>
         </div>
 
@@ -239,7 +251,7 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
           </div>
           <div>
             <h2 className="text-white font-bold text-sm">ShikshaSetu Tutor</h2>
-            <p className="text-[11px] text-green-400 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"/> Online & Context Aware</p>
+            <p className="text-[11px] text-green-400 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"/> Online &amp; Context Aware</p>
           </div>
         </div>
 
@@ -258,30 +270,37 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
           {chatLoading && (
             <div className="flex justify-start">
               <div className="bg-[#1C1C24] border border-[#ffffff0A] rounded-2xl rounded-bl-sm p-4 w-16 flex items-center justify-center gap-1.5 shadow-sm">
-                <span className="w-1.5 h-1.5 bg-gray-500 border-gray-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}/>
-                <span className="w-1.5 h-1.5 bg-gray-500 border-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}/>
-                <span className="w-1.5 h-1.5 bg-gray-500 border-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}/>
+                <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{animationDelay: '0s'}}/>
+                <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}/>
+                <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}/>
               </div>
             </div>
           )}
           <div ref={chatEndRef} />
         </div>
 
-        <form onSubmit={sendChatMessage} className="p-4 bg-[#1C1C24] border-t border-[#ffffff0A] flex gap-2 shrink-0">
-          <input 
-            type="text" 
-            placeholder="Ask for help or an explanation..."
-            value={chatInput}
-            onChange={e => setChatInput(e.target.value)}
-            className="flex-1 bg-[#111116] border border-[#ffffff10] rounded-full px-5 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-          />
-          <button 
-            type="submit" 
-            disabled={chatLoading || !chatInput.trim()}
-            className="w-12 h-12 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 rounded-full flex items-center justify-center text-white transition-colors shrink-0 shadow-lg shadow-indigo-600/20">
-            <Send size={18} className="translate-x-[-1px] translate-y-[1px]" />
-          </button>
-        </form>
+        <div className="p-4 bg-[#1C1C24] border-t border-[#ffffff0A] flex flex-col gap-3 shrink-0">
+          <div className="text-center px-2">
+            <p className="text-[11px] text-indigo-400 font-medium italic">
+              💡 Ask anything about this step — I know your current topic and weak areas.
+            </p>
+          </div>
+          <form onSubmit={sendChatMessage} className="flex gap-2 w-full">
+            <input 
+              type="text" 
+              placeholder="Need help with this topic?"
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              className="flex-1 min-w-0 bg-[#111116] border border-[#ffffff10] rounded-full px-5 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+            <button 
+              type="submit" 
+              disabled={chatLoading || !chatInput.trim()}
+              className="w-12 h-12 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 rounded-full flex items-center justify-center text-white transition-colors shrink-0 shadow-lg shadow-indigo-600/20">
+              <Send size={18} className="translate-x-[-1px] translate-y-[1px]" />
+            </button>
+          </form>
+        </div>
       </div>
 
       <style>{`

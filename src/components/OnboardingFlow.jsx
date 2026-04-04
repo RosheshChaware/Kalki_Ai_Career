@@ -284,15 +284,23 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
         hasFileUpload: !!data.uploadedFileData,
       };
 
-      const res = await fetch('http://localhost:5000/api/v1/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputData: enrichedData }),
-      });
-      
       const DEV_MODE = true;
+      let res;
+      let errBody = {};
+      try {
+        res = await fetch('http://localhost:5000/api/v1/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputData: enrichedData }),
+        });
+        if (!res.ok) errBody = await res.json().catch(() => ({}));
+      } catch (networkErr) {
+        // Network error (server offline)
+        res = { ok: false, status: 'Network Error' };
+        errBody = { error: 'Failed to fetch (Server might be offline)' };
+      }
+      
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
         console.error(`[API ERROR /analyze] Status: ${res.status}`, errBody);
         
         if (DEV_MODE) {

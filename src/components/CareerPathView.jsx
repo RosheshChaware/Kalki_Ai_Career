@@ -4,6 +4,7 @@ import {
   Building2, Target, BookOpen, Layers, ChevronDown, ChevronUp, CheckCircle, 
   Zap, MonitorPlay, Library, Video, BookText
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const Accordion = ({ title, icon: Icon, children, defaultOpen = false }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -98,6 +99,37 @@ const CareerPathView = ({ aiResult }) => {
     const rSorted = detailData ? sortResources(detailData.learningResources) : null;
     const shortOverview = detailData?.overview?.length > 180 ? detailData.overview.substring(0, 180) + "..." : detailData?.overview;
 
+    const parseSalary = (salaryStr) => {
+      const nums = (salaryStr || '').match(/\d+/g);
+      if (!nums || nums.length < 2) return [
+          {name: 'Entry', value: 5}, {name: 'Mid', value: 12}, {name: 'Senior', value: 25}
+      ];
+      const min = parseInt(nums[0]);
+      const max = parseInt(nums[nums.length - 1]);
+      return [
+        { name: 'Entry', value: min },
+        { name: 'Mid', value: Math.round((min + max) / 2) },
+        { name: 'Senior', value: max }
+      ];
+    };
+    
+    const getCompetition = (comp) => {
+      const l = (comp || '').toLowerCase();
+      if(l.includes('high')) return 85;
+      if(l.includes('medium')) return 50;
+      if(l.includes('low')) return 20;
+      return 60;
+    };
+    
+    const getSuccessRate = (rateStr) => {
+      const nums = (rateStr || '').match(/\d+/);
+      const val = nums ? parseInt(nums[0]) : 65;
+      return [
+         { name: 'Success', value: val },
+         { name: 'Alternative', value: 100 - val }
+      ];
+    };
+
     return (
       <div className="flex flex-col gap-6 min-h-[calc(100vh-140px)] animate-in fade-in zoom-in-95 duration-300">
         <button 
@@ -131,23 +163,62 @@ const CareerPathView = ({ aiResult }) => {
                 <h3 className="text-indigo-400 font-bold mb-3 flex items-center gap-2 text-sm"><Zap size={16}/> Quick Insights</h3>
                 <p className="text-gray-300 text-[15px] leading-relaxed mb-6 max-w-3xl">{shortOverview}</p>
                 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-5 border-t border-[#ffffff0A]">
-                  <div>
-                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><TrendingUp size={12}/> Avg Salary</p>
-                    <p className="text-white font-bold text-sm md:text-base">{detailData.averageSalary}</p>
+                {/* Visual Stats Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-5 border-t border-[#ffffff0A]">
+                  
+                  {/* Salary Bar Chart */}
+                  <div className="bg-[#111116]/50 rounded-xl p-4 border border-[#ffffff05]">
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-2 flex items-center gap-1"><TrendingUp size={12}/> Salary Path (LPA)</p>
+                    <div className="h-[100px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                         <BarChart data={parseSalary(detailData.averageSalary)} margin={{top: 10, left: -25, right: 10, bottom: 0}}>
+                            <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} />
+                            <Tooltip cursor={{fill: 'rgba(255,255,255,0.02)'}} contentStyle={{backgroundColor: '#1C1C24', border: '1px solid #ffffff10', fontSize: '12px', borderRadius: '8px', color: '#fff'}} />
+                            <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={20} />
+                         </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><AlertTriangle size={12}/> Competition</p>
-                    <p className="text-white font-bold text-sm md:text-base capitalize">{detailData.competition}</p>
+
+                  {/* Success Rate Donut */}
+                  <div className="bg-[#111116]/50 rounded-xl p-4 border border-[#ffffff05] flex flex-col items-center justify-center relative">
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider w-full text-left mb-2 flex items-center gap-1 absolute top-4 left-4"><Target size={12}/> Success Rate</p>
+                    <div className="h-[90px] w-full mt-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                         <PieChart>
+                           <Pie
+                             data={getSuccessRate(detailData.successRate)}
+                             innerRadius={25}
+                             outerRadius={40}
+                             dataKey="value"
+                             stroke="none"
+                           >
+                             <Cell fill="#10b981" />
+                             <Cell fill="#1e1e2d" />
+                           </Pie>
+                           <Tooltip contentStyle={{backgroundColor: '#1C1C24', border: 'none', color: '#fff', fontSize: '11px', borderRadius: '8px'}} />
+                         </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <p className="absolute text-lg font-bold text-white mt-4">{getSuccessRate(detailData.successRate)[0].value}%</p>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><Target size={12}/> Success Rate</p>
-                    <p className="text-white font-bold text-sm md:text-base">{detailData.successRate}</p>
+
+                  {/* Competition Meter */}
+                  <div className="bg-[#111116]/50 rounded-xl p-4 border border-[#ffffff05] flex flex-col justify-center">
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-4 flex items-center gap-1"><AlertTriangle size={12}/> Competition Level</p>
+                    <div className="flex justify-between text-xs font-bold text-white mb-2">
+                       <span className="capitalize">{detailData.competition}</span>
+                       <span>{getCompetition(detailData.competition)}%</span>
+                    </div>
+                    <div className="w-full h-3 bg-[#1e1e2d] rounded-full overflow-hidden">
+                       <div 
+                           className="h-full rounded-full bg-gradient-to-r from-orange-400 to-red-500 transition-all duration-1000" 
+                           style={{ width: `${getCompetition(detailData.competition)}%` }} 
+                       />
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-3 leading-relaxed">Based on current market demand.</p>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><Building2 size={12}/> Top Companies</p>
-                    <p className="text-white font-bold text-sm md:text-base truncate max-w-[120px]" title={detailData.topCompanies?.join(', ')}>{detailData.topCompanies?.[0] || 'N/A'}</p>
-                  </div>
+
                 </div>
               </div>
 
@@ -157,14 +228,24 @@ const CareerPathView = ({ aiResult }) => {
                 <div className="space-y-5">
                   <Accordion title="Roadmap to Achieve" icon={Layers} defaultOpen={true}>
                     <ul className="space-y-5 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-[2px] before:bg-gradient-to-b before:from-indigo-500/50 before:to-transparent">
-                      {detailData.roadmapSteps?.map((step, idx) => (
-                        <li key={idx} className="relative flex items-start gap-4">
-                          <div className="w-6 h-6 rounded-full bg-[#111116] border-2 border-indigo-400 flex items-center justify-center shrink-0 z-10 mt-0.5 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
-                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-300"></div>
+                      {detailData.roadmapSteps?.map((step, idx) => {
+                        const isFoundation = idx === 0;
+                        const isEnd = idx === (detailData.roadmapSteps.length - 1);
+                        return (
+                        <li key={idx} className="relative flex items-start gap-4 pb-2">
+                          <div className={`w-8 h-8 rounded-full bg-[#111116] border-2 ${isFoundation ? 'border-green-400' : 'border-indigo-400'} flex items-center justify-center shrink-0 z-10 mt-0.5 shadow-[0_0_10px_rgba(99,102,241,0.2)]`}>
+                            {isFoundation ? <BookOpen size={12} className="text-green-300"/> : isEnd ? <Briefcase size={12} className="text-indigo-300"/> : <Layers size={12} className="text-indigo-300"/>}
                           </div>
-                          <p className="text-[14px] text-gray-300 leading-snug">{step}</p>
+                          <div className="flex flex-col gap-1.5 mt-1.5">
+                            <div className="flex items-center gap-2">
+                               <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#111116] border border-[#ffffff10] text-gray-400">
+                                   {isFoundation ? 'Foundation' : isEnd ? 'Final Stage' : 'Advancement'}
+                               </span>
+                            </div>
+                            <p className="text-[14px] text-gray-300 leading-snug">{step}</p>
+                          </div>
                         </li>
-                      ))}
+                      )})}
                     </ul>
                   </Accordion>
 
@@ -176,13 +257,18 @@ const CareerPathView = ({ aiResult }) => {
                       </div>
                       <div className="pt-4 border-t border-[#ffffff0A]">
                         <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Industry Growth</p>
-                        <p className="text-sm text-gray-300 leading-relaxed">{detailData.growthPotential}</p>
+                        <p className="text-sm text-gray-300 leading-relaxed line-clamp-2">{detailData.growthPotential}</p>
                       </div>
                       <div className="pt-4 border-t border-[#ffffff0A]">
-                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-3">Top Hiring Companies</p>
-                        <div className="flex flex-wrap gap-2">
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-4">Top Hiring Companies</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           {detailData.topCompanies?.map((comp, idx) => (
-                            <span key={idx} className="px-3 py-1.5 rounded-md bg-white/5 border border-white/10 text-xs text-gray-300 shadow-sm">{comp}</span>
+                            <div key={idx} className="flex items-center gap-2 p-3 rounded-lg bg-[#111116] border border-[#ffffff05] hover:border-indigo-500/30 transition-colors group shadow-sm">
+                               <div className="w-8 h-8 rounded-md bg-[#1C1C24] flex items-center justify-center shrink-0 text-gray-400 group-hover:text-indigo-400 transition-colors">
+                                  <Building2 size={16} />
+                               </div>
+                               <span className="text-[12px] font-bold text-gray-200 truncate">{comp}</span>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -195,18 +281,18 @@ const CareerPathView = ({ aiResult }) => {
                   <Accordion title="Skills Required" icon={Target} defaultOpen={true}>
                     <div className="mb-6">
                       <p className="text-[11px] text-indigo-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><MonitorPlay size={14}/> Core Technical Skills</p>
-                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <ul className="flex flex-wrap gap-2">
                         {detailData.technicalSkills?.map((s, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[13px] text-gray-300 bg-[#1C1C24] px-3 py-2.5 rounded-lg border border-[#ffffff0A]"><CheckCircle size={16} className="text-green-400 shrink-0 mt-px"/> {s}</li>
+                          <li key={i} className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-300 bg-indigo-500/10 px-3 py-1.5 rounded-full border border-indigo-500/20"><MonitorPlay size={12}/> {s}</li>
                         ))}
                       </ul>
                     </div>
 
                     <div>
                       <p className="text-[11px] text-purple-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><Target size={14}/> Essential Soft Skills</p>
-                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <ul className="flex flex-wrap gap-2">
                         {detailData.softSkills?.map((s, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[13px] text-gray-300 bg-[#1C1C24] px-3 py-2.5 rounded-lg border border-[#ffffff0A]"><CheckCircle size={16} className="text-purple-400 shrink-0 mt-px"/> {s}</li>
+                          <li key={i} className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-300 bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20"><Target size={12}/> {s}</li>
                         ))}
                       </ul>
                     </div>

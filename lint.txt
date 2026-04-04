@@ -1,0 +1,93 @@
+﻿
+C:\Users\HP\Desktop\projects\Anisha_guide\Ai_guidar\src\App.jsx
+  72:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  70 |     if (user && pendingRedirect.current === 'learning') {
+  71 |       pendingRedirect.current = null;
+> 72 |       setShowAuth(false);
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  73 |       const done = localStorage.getItem(`onboarding_complete_${user.uid}`);
+  74 |       if (done) {
+  75 |         setShowLearningPage(true);  react-hooks/set-state-in-effect
+  85:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  83 |   useEffect(() => {
+  84 |     if (!user) {
+> 85 |       setShowLearningPage(false);
+     |       ^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  86 |       setShowOnboarding(false);
+  87 |       setShowAssessment(false);
+  88 |     }                                                                                                        react-hooks/set-state-in-effect
+
+C:\Users\HP\Desktop\projects\Anisha_guide\Ai_guidar\src\components\AdaptiveRoadmap.jsx
+    3:10  error  'db' is defined but never used. Allowed unused vars must match /^[A-Z_]/u         no-unused-vars
+    4:10  error  'doc' is defined but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+    4:15  error  'updateDoc' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+    6:38  error  'user' is defined but never used                                                  no-unused-vars
+  195:40  error  'idx' is defined but never used                                                   no-unused-vars
+
+C:\Users\HP\Desktop\projects\Anisha_guide\Ai_guidar\src\components\CareerOutcomesPage.jsx
+  108:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  106 |   useEffect(() => {
+  107 |     // Reset side panel when course changes
+> 108 |     setSelectedNodeData(null);
+      |     ^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  109 |   }, [selectedCourseId]);
+  110 |
+  111 |   const selectedCourse = useMemo(() => {  react-hooks/set-state-in-effect
+
+C:\Users\HP\Desktop\projects\Anisha_guide\Ai_guidar\src\components\CollegeDetailSidebar.jsx
+   4:37  error  'Icon' is defined but never used  no-unused-vars
+  37:27  error  'Icon' is defined but never used  no-unused-vars
+
+C:\Users\HP\Desktop\projects\Anisha_guide\Ai_guidar\src\components\CollegeExplorerPage.jsx
+  54:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  52 |     });
+  53 |
+> 54 |     setFilteredColleges(filtered);
+     |     ^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  55 |
+  56 |     // Update search dropdown results
+  57 |     if (searchQuery.trim().length > 0) {  react-hooks/set-state-in-effect
+
+C:\Users\HP\Desktop\projects\Anisha_guide\Ai_guidar\src\components\OnboardingFlow.jsx
+  170:10  error  'dir' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\HP\Desktop\projects\Anisha_guide\Ai_guidar\src\components\SubjectAdvisorPage.jsx
+  1:27  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\HP\Desktop\projects\Anisha_guide\Ai_guidar\src\components\auth\AuthPage.jsx
+  126:16  error    '_' is defined but never used                                                                                                                                                                                                                                                         no-unused-vars
+  129:6   warning  React Hook useEffect has missing dependencies: 'checkEmailVerified', 'email', 'onVerified', and 'password'. Either include them or remove the dependency array. If 'onVerified' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+C:\Users\HP\Desktop\projects\Anisha_guide\Ai_guidar\src\context\AuthContext.jsx
+  107:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+✖ 16 problems (15 errors, 1 warning)
+
