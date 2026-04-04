@@ -157,19 +157,75 @@ app.post('/api/v1/roadmap/update', async (req, res) => {
   try {
     const { currentRoadmap, newProgress, userContext } = sanitizeData(req.body);
     if (!newProgress) return res.status(400).json({ error: 'New progress data is required' });
-    
+    if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'System AI config is missing' });
+
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     });
 
-    const prompt = `You are an AI Mentor. Update roadmap in JSON given NEW PROGRESS: ${JSON.stringify(newProgress)} and CURRENT ROADMAP: ${JSON.stringify(currentRoadmap || {})}. Retain the strict array JSON format.`;
-    const result = await model.generateContent(prompt);
-    
-    res.status(200).json({ roadmap: JSON.parse(result.response.text()) });
+    const scoreNum = parseFloat(newProgress.testScore);
+    const hasScore = !isNaN(scoreNum);
+    const hasMessage = newProgress.experience && newProgress.experience.trim().length > 0;
+
+    // Determine performance tier for scoring hints
+    let scoreTier = '';
+    if (hasScore) {
+      if (scoreNum < 40) scoreTier = 'CRITICAL (below 40%) — drastically increase foundational steps, add remedial tasks, set priority to high for weak areas';
+      else if (scoreNum < 60) scoreTier = 'LOW (40-59%) — add more practice steps, revisit fundamentals, increase priority on weak topics';
+      else if (scoreNum < 75) scoreTier = 'MEDIUM (60-74%) — maintain balanced revision + practice, add checkpoint quizzes';
+      else if (scoreNum < 90) scoreTier = 'GOOD (75-89%) — move toward application tasks, some advanced questions, reduce basic drill steps';
+      else scoreTier = 'EXCELLENT (90%+) — advance to next-level content, challenge tasks, higher-order thinking';
+    }
+
+    const SYSTEM_PROMPT = `You are an expert AI academic mentor for Indian high school students.
+Your task is to update and adapt a student's learning roadmap based on their recent input.
+
+SCORE SIGNAL: ${hasScore ? `Test score = ${scoreNum}%. Tier: ${scoreTier}` : 'No score provided.'}
+MESSAGE SIGNAL: ${hasMessage ? `Student says: "${newProgress.experience}"` : 'No message provided.'}
+CURRENT SUBJECT FOCUS: ${newProgress.subject || 'General'}
+EXISTING ROADMAP: ${JSON.stringify(currentRoadmap || [])}
+USER CONTEXT: ${JSON.stringify(userContext || {})}
+
+INSTRUCTIONS:
+- Analyze both signals (score + message) together.
+- If score is low: add more foundational steps, break tasks into smaller chunks, increase priority.
+- If score is high: add advanced tasks, challenge problems, next-level learning.
+- If student mentions a specific struggle topic (e.g., "integration", "optics"), make that topic the first high-priority roadmap item with detailed tasks.
+- Generate 3 to 5 roadmap milestones (steps), each with clear, distinct titles and real tasks.
+- Each task must be 1 specific, actionable learning step (not vague).
+- Set status to "in-progress" only for the first item, "pending" for the rest.
+- Keep the roadmap student-friendly, motivational, and subject-specific.
+
+OUTPUT: Return STRICT JSON — a JSON ARRAY ONLY, no wrapper object. Conform exactly to this schema per item:
+[
+  {
+    "id": "rm_0",
+    "title": "<milestone title>",
+    "status": "in-progress" | "pending" | "completed",
+    "priority": "high" | "medium" | "low",
+    "aiAdvice": "<1-2 sentence mentor tip for this milestone>",
+    "tasks": [
+      { "id": "t_0_0", "desc": "<specific task description>", "completed": false }
+    ]
+  }
+]`;
+
+    const result = await model.generateContent(SYSTEM_PROMPT);
+    const rawText = result.response.text().trim();
+
+    // Safely parse — strip any accidental markdown fences
+    const cleanJson = rawText.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+    const parsedRoadmap = JSON.parse(cleanJson);
+
+    if (!Array.isArray(parsedRoadmap)) {
+      return res.status(500).json({ error: 'AI returned invalid roadmap format. Please try again.' });
+    }
+
+    res.status(200).json({ roadmap: parsedRoadmap });
   } catch (error) {
     console.error('Error in /api/v1/roadmap/update:', error.message);
-    res.status(500).json({ error: 'Failed to update roadmap automatically.' });
+    res.status(500).json({ error: 'Failed to update roadmap. The AI service may be busy — please try again.' });
   }
 });
 
