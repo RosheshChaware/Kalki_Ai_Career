@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User as UserIcon, Moon, Sun, Globe, LogOut, Save, ShieldAlert, CheckCircle2 } from 'lucide-react';
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { updateProfile } from '../lib/firestoreService';
 
 const SettingsView = ({ user, inputData }) => {
   const [profile, setProfile] = useState({
@@ -44,18 +44,17 @@ const SettingsView = ({ user, inputData }) => {
     setSaving(true);
     try {
       if (user?.uid) {
-        // We write to a central users profile doc
-        const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, {
+        const success = await updateProfile(user.uid, {
           name: profile.name,
+          email: profile.email,
           currentClass: profile.currentClass,
           stream: profile.stream,
-          targetGoal: profile.targetGoal
-        }).catch(() => {
-          console.warn("User doc might not exist yet; in a full app we setDoc here if needed.");
+          goal: profile.targetGoal,
         });
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
+        if (success) {
+          setSaveSuccess(true);
+          setTimeout(() => setSaveSuccess(false), 3000);
+        }
       }
     } catch (err) {
       console.error("Error saving profile:", err);

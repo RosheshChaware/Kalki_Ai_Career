@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 import { getFirestore } from 'firebase/firestore';
@@ -13,9 +13,12 @@ const firebaseConfig = {
   measurementId: "G-K0KG4BXQY6",
 };
 
-const app = initializeApp(firebaseConfig);
+// Prevent multiple initialization
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 export const db = getFirestore(app);
 export default app;
+

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Video, Globe, ArrowLeft, BookOpen, Target, Briefcase } from 'lucide-react';
+import { FileText, Video, Globe, ArrowLeft, BookOpen, Target, Briefcase, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../firebase';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { STUDY_RESOURCES } from '../data/studyResources';
+import { getUserData } from '../lib/firestoreService';
+import { getGoalResources } from '../data/goalIntelligence';
 
 const getIconForType = (type) => {
   switch (type) {
@@ -82,26 +81,43 @@ const Section = ({ title, reason, icon: Icon, items }) => {
 
 const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(freshResult || null);
+  const [loading, setLoading] = useState(!freshResult);
+  const [userGoal, setUserGoal] = useState('');
+  const [userClass, setUserClass] = useState('');
+  const [resources, setResources] = useState([]);
 
   useEffect(() => {
-    if (freshResult || !user) return;
-    setLoading(true);
-    (async () => {
+    const loadData = async () => {
+      setLoading(true);
       try {
-        const sessionsRef = collection(db, 'results', user.uid, 'sessions');
-        const q = query(sessionsRef, orderBy('createdAt', 'desc'), limit(1));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          setData(snap.docs[0].data());
+        // Priority 1: use freshResult passed from onboarding
+        if (freshResult?.inputData) {
+          const goal = freshResult.inputData.targetGoal || '';
+          const cls = freshResult.inputData.currentClass || '';
+          setUserGoal(goal);
+          setUserClass(cls);
+          setResources(getGoalResources(goal));
+          return;
+        }
+
+        // Priority 2: fetch from Firestore users/{uid}
+        if (user) {
+          const userData = await getUserData(user.uid);
+          if (userData) {
+            const goal = userData.goal || '';
+            const cls = userData.class || '';
+            setUserGoal(goal);
+            setUserClass(cls);
+            setResources(getGoalResources(goal));
+          }
         }
       } catch (e) {
         console.error('[StudyMaterials] Fetch error:', e);
       } finally {
         setLoading(false);
       }
-    })();
+    };
+    loadData();
   }, [user, freshResult]);
 
   if (loading) {
@@ -113,35 +129,9 @@ const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
     );
   }
 
-  // Smart Selection Logic
-  const inputData = data?.inputData;
-  const aiOutput = data?.aiOutput;
-
-  // Identify profiles
-  let userClass = inputData?.currentClass || '';
-  let weakSubject = '';
-  // Prioritize AI output weak subject, otherwise pick from user input
-  if (aiOutput?.weakSubjects?.length > 0) weakSubject = aiOutput.weakSubjects[0].subject;
-  else if (inputData?.weakSubjects?.length > 0) weakSubject = inputData.weakSubjects[0];
-
-  let careerGoal = inputData?.targetGoal || '';
-
-  // Extract relevant topics to match with
-  let allFiltered = STUDY_RESOURCES.map(m => {
-    let score = 0;
-    if (m.tags.includes(weakSubject)) score += 3;
-    if (m.tags.includes(careerGoal)) score += 2;
-    if (userClass && (m.classes.includes(userClass) || m.classes.includes('All'))) score += 1;
-    return { ...m, score };
-  })
-    .filter(m => m.score > 0)
-    .sort((a, b) => b.score - a.score);
-
-  if (allFiltered.length === 0) allFiltered = STUDY_RESOURCES; // Fallback to all if completely mismatched
-
-  const conceptItems = allFiltered.filter(m => m.category === 'Concept Learning').slice(0, 3);
-  const practiceItems = allFiltered.filter(m => m.category === 'Practice Resources').slice(0, 3);
-  const revisionItems = allFiltered.filter(m => m.category === 'Revision Notes').slice(0, 3);
+  const conceptItems   = resources.filter(m => m.category === 'Concept Learning');
+  const practiceItems  = resources.filter(m => m.category === 'Practice Resources');
+  const revisionItems  = resources.filter(m => m.category === 'Revision Notes');
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-gray-200 font-sans selection:bg-indigo-500/30 pb-20">
@@ -157,34 +147,68 @@ const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
             </button>
             <div>
               <h1 className="text-xl font-bold text-white leading-tight flex items-center gap-2">
-                Study Materials 📚 <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] uppercase font-bold border border-indigo-500/20">Smart Match</span>
+                Study Materials 📚{' '}
+                <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] uppercase font-bold border border-indigo-500/20">
+                  {userGoal ? 'Goal-Matched' : 'Smart Match'}
+                </span>
               </h1>
-              <p className="text-xs text-gray-400 mt-0.5">Resources intelligently tuned to your profile</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {userGoal
+                  ? `Curated for: ${userGoal}${userClass ? ` · ${userClass}` : ''}`
+                  : 'Resources intelligently tuned to your profile'}
+              </p>
+            </div>
+          </div>
+          {/* Goal badge */}
+          {userGoal && (
+            <div className="hidden sm:flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-4 py-2">
+              <Sparkles size={14} className="text-indigo-400" />
+              <span className="text-xs text-indigo-300 font-semibold">{userGoal}</span>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* NO GOAL BANNER */}
+      {!userGoal && (
+        <div className="max-w-[1200px] mx-auto px-6 pt-8">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 flex items-start gap-4">
+            <span className="text-2xl">⚡</span>
+            <div>
+              <p className="text-amber-300 font-bold text-sm">Complete your onboarding to unlock goal-specific resources</p>
+              <p className="text-amber-400/60 text-xs mt-1">Resources below are general. Finish onboarding to get materials tailored to your goal.</p>
             </div>
           </div>
         </div>
-      </header>
+      )}
 
       {/* CONTENT */}
       <main className="max-w-[1200px] mx-auto px-6 py-10 mt-2">
         <Section
           title="Concept Learning"
-          reason="Detailed lectures and foundational resources"
+          reason={userGoal ? `Foundational resources for ${userGoal}` : 'Detailed lectures and foundational resources'}
           icon={Video}
           items={conceptItems}
         />
         <Section
           title="Practice Resources 📝"
-          reason="Real problems and interactive sets"
+          reason={userGoal ? `Real problems and tests for ${userGoal}` : 'Real problems and interactive sets'}
           icon={Target}
           items={practiceItems}
         />
         <Section
           title="Revision Notes"
-          reason="Cheat sheets and quick references"
+          reason={userGoal ? `Quick references for ${userGoal}` : 'Cheat sheets and quick references'}
           icon={BookOpen}
           items={revisionItems}
         />
+
+        {resources.length === 0 && (
+          <div className="text-center py-20 text-gray-500">
+            <p className="text-lg font-medium">No resources found</p>
+            <p className="text-sm mt-2">Try completing the onboarding with a specific goal.</p>
+          </div>
+        )}
       </main>
     </div>
   );

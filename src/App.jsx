@@ -19,6 +19,7 @@ import AdaptiveQuizPage from './components/AdaptiveQuizPage';
 import PixelSpotlightBackground from './components/backgrounds/PixelSpotlightBackground';
 import ScholarshipsPage from './components/ScholarshipsPage';
 import FloatingAssistant from './components/FloatingAssistant';
+import { checkUserExists } from './lib/firestoreService';
 
 function App() {
   const { user } = useAuth();
@@ -82,13 +83,18 @@ function App() {
 
   const pendingRedirect = useRef(null);
 
-  const openLearningPage = () => {
+  const openLearningPage = async () => {
     if (user) {
-      const done = localStorage.getItem(`onboarding_complete_${user.uid}`);
-      if (done) {
-        setShowLearningPage(true);
-        setCurrentSubPage('Dashboard');
-      } else {
+      try {
+        const exists = await checkUserExists(user.uid);
+        if (exists) {
+          setShowLearningPage(true);
+          setCurrentSubPage('Dashboard');
+        } else {
+          setShowOnboarding(true);
+        }
+      } catch (err) {
+        console.error('[App] Error checking user:', err);
         setShowOnboarding(true);
       }
     } else {
@@ -102,13 +108,19 @@ function App() {
     if (user && pendingRedirect.current === 'learning') {
       pendingRedirect.current = null;
       setShowAuth(false);
-      const done = localStorage.getItem(`onboarding_complete_${user.uid}`);
-      if (done) {
-        setShowLearningPage(true);
-        setCurrentSubPage('Dashboard');
-      } else {
-        setShowOnboarding(true);
-      }
+      (async () => {
+        try {
+          const exists = await checkUserExists(user.uid);
+          if (exists) {
+            setShowLearningPage(true);
+            setCurrentSubPage('Dashboard');
+          } else {
+            setShowOnboarding(true);
+          }
+        } catch {
+          setShowOnboarding(true);
+        }
+      })();
     }
   }, [user]);
 
@@ -178,6 +190,8 @@ function App() {
     return (
       <OnboardingFlow
         userId={user?.uid}
+        userName={user?.displayName || ''}
+        userEmail={user?.email || ''}
         onComplete={(payload) => {
           setAiResult(payload);
           setShowOnboarding(false);
@@ -198,7 +212,6 @@ function App() {
           onOpenPracticeQuestions={openPracticeQuestions}
           onOpenCareerDetails={openCareerDetails}
           onReanalyze={() => {
-            if (user) localStorage.removeItem(`onboarding_complete_${user.uid}`);
             setAiResult(null);
             setShowLearningPage(false);
             setShowOnboarding(true);

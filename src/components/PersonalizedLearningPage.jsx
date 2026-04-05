@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { db } from '../firebase';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { getUserData } from '../lib/firestoreService';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { jsPDF } from 'jspdf';
 import { 
@@ -57,31 +56,139 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
     if (freshResult || !user) return;
     (async () => {
       try {
-        const sessionsRef = collection(db, 'results', user.uid, 'sessions');
-        const q = query(sessionsRef, orderBy('createdAt', 'desc'), limit(1));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          setData(snap.docs[0].data());
-        } else {
+        const userData = await getUserData(user.uid);
+        if (!userData) {
           onReanalyze?.();
+          return;
         }
+
+        // Build an enriched payload matching what OnboardingFlow sends
+        const inputData = {
+          currentClass: userData.class || '',
+          stream: userData.stream || '',
+          targetGoal: userData.goal || '',
+          language: userData.language || 'English',
+          strongSubjectsAll: userData.strongSubjects || [],
+          weakSubjectsAll: userData.weakSubjects || [],
+          weakTopicsAll: userData.weakTopics || [],
+          biggestChallenge: '',
+          confidence: '',
+          subjectEntries: (userData.scores || []).map(s => ({
+            subject: s.subject,
+            score: String(s.score),
+            correctQ: String(s.correctQs || ''),
+            incorrectQ: String(s.incorrectQs || ''),
+          })),
+          aiChat: userData.aiChat || {},
+          hasFileUpload: false,
+        };
+
+        console.log('[Dashboard] Re-analyzing with saved user data:', inputData);
+
+        const res = await fetch('http://localhost:5000/api/v1/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputData }),
+        });
+
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          console.error('[Dashboard] /analyze failed:', errBody);
+          // Show partial data from Firestore without fake AI fields
+          const subjectScores = (userData.scores || []).map(s => ({ subject: s.subject, score: s.score }));
+          setData({
+            inputData: {
+              currentClass: userData.class || '',
+              stream: userData.stream || '',
+              targetGoal: userData.goal || '',
+              strongSubjects: userData.strongSubjects || [],
+              weakSubjects: userData.weakSubjects || [],
+            },
+            aiOutput: {
+              strongSubjects: (userData.strongSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
+              weakSubjects: (userData.weakSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
+              subjectScores,
+              learningProfile: {},
+              learningIssues: [],
+              recommendedFocus: [],
+              careerSuggestions: [],
+              insights: { overallAnalysis: 'AI analysis unavailable. Click "Update Data" to retry.' },
+            },
+            aiChat: userData.aiChat || null,
+          });
+          return;
+        }
+
+        const aiOutput = await res.json();
+        console.log('[Dashboard] AI re-analysis result:', aiOutput);
+
+        setData({
+          inputData: {
+            currentClass: userData.class || '',
+            stream: userData.stream || '',
+            targetGoal: userData.goal || '',
+            language: userData.language || '',
+            strongSubjects: userData.strongSubjects || [],
+            weakSubjects: userData.weakSubjects || [],
+          },
+          aiOutput,
+          aiChat: userData.aiChat || null,
+        });
       } catch (e) {
-        console.error('[Dashboard] Firestore fetch error:', e);
+        console.error('[Dashboard] Error fetching or re-analyzing:', e);
       } finally {
         setLoading(false);
       }
     })();
   }, [user, freshResult, onReanalyze]);
 
-  // Load from LocalStorage on mount
+  // Load from LocalStorage on mount (notes only — NOT AI analysis)
   useEffect(() => {
     const localNotes = JSON.parse(localStorage.getItem('ai_learning_notes') || '[]');
     setSavedNotes(localNotes);
-    
-    const localHistory = JSON.parse(localStorage.getItem('ai_learning_history') || '[]');
-    setHistoryList(localHistory);
   }, []);
 
+  // ── Derived values (computed before any early return so hooks below stay stable) ──
+  const ai = data?.aiOutput || {
+    strongSubjects: [],
+    weakSubjects: [],
+    subjectScores: [],
+    learningProfile: {},
+    learningIssues: [],
+    recommendedFocus: [],
+    insights: { overallAnalysis: 'No analysis data available yet. Complete onboarding to see insights.' },
+  };
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
+
+  const avgScore = ai.subjectScores?.length
+    ? Math.round(ai.subjectScores.reduce((a, b) => a + (Number(b.score) || 0), 0) / ai.subjectScores.length)
+    : 0;
+
+  const mistakeData = ai.learningIssues?.length > 0
+    ? ai.learningIssues.map(iss => ({
+        name: iss.type,
+        value: iss.severity === 'high' ? 3 : iss.severity === 'medium' ? 2 : 1
+      }))
+    : [{ name: 'No Major Issues', value: 1 }];
+
+  // Build in-memory session history (no localStorage for AI data)
+  useEffect(() => {
+    if (!ai || !ai.subjectScores?.length) return;
+    const newEntry = {
+      date: new Date().toLocaleString(),
+      subject: ai.weakSubjects?.[0]?.subject || 'N/A',
+      score: `${avgScore}%`,
+      issues: ai.learningIssues?.length || 0,
+      detail: `Analyzed ${ai.subjectScores.length} subjects with ${ai.learningIssues?.length || 0} issues found.`,
+    };
+    setHistoryList(prev => {
+      // Avoid duplicate entry for same session
+      if (prev.length > 0 && prev[0].date === newEntry.date) return prev;
+      return [newEntry, ...prev];
+    });
+  }, [data]);
+
+  // ── Early returns AFTER all hooks ──
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
@@ -90,48 +197,8 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
     );
   }
 
-  if (!data?.aiOutput) return null;
-
-  const ai = data.aiOutput;
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
-
-  const avgScore = ai.subjectScores?.length 
-    ? Math.round(ai.subjectScores.reduce((a, b) => a + (Number(b.score) || 0), 0) / ai.subjectScores.length)
-    : 0;
-
-  // Process data for Mistake Distribution Pie Chart
-  const mistakeData = ai.learningIssues?.length > 0 
-    ? ai.learningIssues.map(iss => ({
-        name: iss.type,
-        value: iss.severity === 'high' ? 3 : iss.severity === 'medium' ? 2 : 1
-      }))
-    : [{ name: 'No Major Issues', value: 1 }];
-
-  // Persist History when data updates
-  useEffect(() => {
-    if (ai && ai.subjectScores) {
-        const localHistory = JSON.parse(localStorage.getItem('ai_learning_history') || '[]');
-        
-        // Prevent duplicate consecutive saves
-        const isDuplicate = localHistory.length > 0 && 
-                            localHistory[0].score === `${avgScore}%` && 
-                            localHistory[0].subject === (ai.weakSubjects?.[0]?.subject || 'N/A') &&
-                            localHistory[0].issues === (ai.learningIssues?.length || 0);
-                            
-        if (!isDuplicate) {
-            const newEntry = {
-                date: new Date().toLocaleString(),
-                subject: ai.weakSubjects?.[0]?.subject || 'N/A',
-                score: `${avgScore}%`,
-                issues: ai.learningIssues?.length || 0,
-                detail: `Analyzed ${ai.subjectScores.length} subjects with ${ai.learningIssues?.length || 0} issues found.`
-            };
-            const updatedHistory = [newEntry, ...localHistory];
-            localStorage.setItem('ai_learning_history', JSON.stringify(updatedHistory));
-            setHistoryList(updatedHistory);
-        }
-    }
-  }, [ai, avgScore]);
+  // ── All hooks and derived values are above this line ──
+  // ── Remaining derived values / handlers use the already-computed ai/avgScore/mistakeData ──
 
   const downloadPDF = async () => {
     setActionsOpen(false);
@@ -465,6 +532,48 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                   {ai.insights?.overallAnalysis || "We are still gathering enough data to provide deep insights. Complete more sessions to unlock comprehensive intelligence."}
                 </p>
               </section>
+
+              {/* ── ROW 3.5: AI LEARNING PROFILE (from onboarding chat) ── */}
+              {data?.aiChat && Object.keys(data.aiChat).length > 0 && (
+                <section className="bg-[#111116] rounded-2xl border border-[#ffffff0A] overflow-hidden">
+                  <div className="px-6 py-5 border-b border-[#ffffff0A] flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600/20 to-purple-600/20 flex items-center justify-center">
+                      <Sparkles size={16} className="text-indigo-400" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-white">AI Learning Profile</h2>
+                      <p className="text-[11px] text-gray-500">Personalized analysis from your onboarding conversation</p>
+                    </div>
+                  </div>
+                  <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[
+                      { key: 'learningStyle', label: 'Learning Style', icon: '🧠', color: 'indigo' },
+                      { key: 'studyBehavior', label: 'Study Behavior', icon: '📚', color: 'purple' },
+                      { key: 'focusLevel', label: 'Focus Level', icon: '🎯', color: 'blue' },
+                      { key: 'primaryStruggle', label: 'Key Problem', icon: '⚡', color: 'orange' },
+                      { key: 'motivation', label: 'Motivation', icon: '🔥', color: 'green' },
+                    ].filter(item => data.aiChat[item.key]).map(item => {
+                      const colorMap = {
+                        indigo: { bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-300', dot: 'bg-indigo-500' },
+                        purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-300', dot: 'bg-purple-500' },
+                        blue:   { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-300', dot: 'bg-blue-500' },
+                        orange: { bg: 'bg-orange-500/10', border: 'border-orange-500/20', text: 'text-orange-300', dot: 'bg-orange-500' },
+                        green:  { bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-300', dot: 'bg-green-500' },
+                      };
+                      const c = colorMap[item.color];
+                      return (
+                        <div key={item.key} className={`${c.bg} border ${c.border} rounded-xl p-4 transition-all hover:scale-[1.02] duration-200`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">{item.icon}</span>
+                            <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">{item.label}</span>
+                          </div>
+                          <p className={`text-sm font-bold ${c.text}`}>{data.aiChat[item.key]}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
 
               {/* ── ROW 4: ACTION PLAN ── */}
               <section>

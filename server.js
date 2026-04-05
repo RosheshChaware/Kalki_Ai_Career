@@ -5,11 +5,38 @@ import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import helmet from 'helmet';
 import xss from 'xss';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+// ── Resolve __dirname in ES Modules ──
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ── Load .env from src/ (where the file actually lives) ──
+// dotenv.config() with no path defaults to <cwd>/.env which does NOT exist.
+// We explicitly point to src/.env to ensure all variables are loaded.
+const envPath = path.resolve(__dirname, 'src', '.env');
+const envResult = dotenv.config({ path: envPath });
+
+if (envResult.error) {
+  console.error(`[ENV] FAILED to load .env from: ${envPath}`);
+  console.error('[ENV] Error:', envResult.error.message);
+} else {
+  console.log(`[ENV] Loaded .env from: ${envPath}`);
+  console.log(`[ENV] GEMINI_API_KEY present: ${!!process.env.GEMINI_API_KEY}`);
+  console.log(`[ENV] PORT: ${process.env.PORT}`);
+  console.log(`[ENV] EMAIL_USER: ${process.env.EMAIL_USER}`);
+}
+
+// ── Startup validation — crash early with a clear message ──
+if (!process.env.GEMINI_API_KEY) {
+  console.error('[FATAL] GEMINI_API_KEY is not set. Check src/.env and restart the server.');
+  process.exit(1);
+}
 
 // Secure backend-only API key usage
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+console.log('[Gemini] GoogleGenerativeAI client initialized successfully.');
 
 const app = express();
 
@@ -91,8 +118,14 @@ app.post('/api/v1/analyze', async (req, res) => {
   try {
     const payload = sanitizeData(req.body);
     const { inputData } = payload;
+
+    // Debug: log incoming request details
+    console.log('[/analyze] Incoming request payload keys:', Object.keys(inputData || {}));
+    console.log('[/analyze] Goal:', inputData?.targetGoal, '| Stream:', inputData?.stream, '| Class:', inputData?.currentClass);
+    console.log('[/analyze] Strong subjects:', (inputData?.strongSubjectsAll || []).join(', ') || 'none');
+    console.log('[/analyze] Weak subjects:', (inputData?.weakSubjectsAll || []).join(', ') || 'none');
+
     if (!inputData) return res.status(400).json({ error: 'Input form data is required' });
-    if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'System AI config is missing' });
 
     // File Upload Security Check
     if (inputData.uploadedFileData) {
@@ -101,11 +134,8 @@ app.post('/api/v1/analyze', async (req, res) => {
         if (!isValid) return res.status(400).json({ error: 'Invalid file format. Only JPG, PNG, and PDF are allowed.' });
     }
 
-    const cacheKey = getCacheKey('analyze_profile', { formData: inputData, hasFile: !!inputData.uploadedFileData });
-    if (apiCache.has(cacheKey)) {
-        console.log('[Cache Hit] Returning cached /analyze data to save API Quota.');
-        return res.status(200).json(apiCache.get(cacheKey));
-    }
+    // NOTE: Cache intentionally disabled for /analyze — each request must produce fresh,
+    // user-specific AI output. DO NOT re-add caching here.
 
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
@@ -142,14 +172,26 @@ Output EXACT STRICT JSON ONLY with the following structure:
 }`;
     const prompt = `${SYSTEM_PROMPT}\n\n--- STUDENT DATA ---\n${buildContext(inputData)}`;
 
+    console.log('[/analyze] Sending prompt to Gemini for goal:', inputData.targetGoal || 'unknown');
     const result = await model.generateContent(prompt);
-    const jsonOutput = JSON.parse(result.response.text());
+    const rawText = result.response.text();
 
-    apiCache.set(cacheKey, jsonOutput); // Save to cache
+    let jsonOutput;
+    try {
+      jsonOutput = JSON.parse(rawText);
+    } catch (parseError) {
+      console.error('[/analyze] Gemini returned non-JSON response:', rawText.substring(0, 300));
+      return res.status(500).json({ error: 'Gemini returned an unparseable response. Try again.' });
+    }
+
+    console.log('[/analyze] Gemini responded successfully. Keys:', Object.keys(jsonOutput));
     res.status(200).json(jsonOutput);
   } catch (error) {
-    console.error('Error in /api/v1/analyze:', error.message);
-    res.status(500).json({ error: 'AI Processing Failed. Server is busy or limits reached.' });
+    console.error('[/analyze] FULL ERROR:', error);
+    res.status(500).json({
+      error: error.message || 'AI Processing Failed. Check server logs.',
+      detail: error.toString(),
+    });
   }
 });
 

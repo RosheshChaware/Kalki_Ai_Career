@@ -1,7 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { db } from '../firebase';
-import { doc, setDoc, collection } from 'firebase/firestore';
-import { GraduationCap, Brain, Clock, BarChart2 } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { saveOnboardingData } from '../lib/firestoreService';
+import { GraduationCap, Brain, Clock, BarChart2, Sparkles } from 'lucide-react';
+import { getGoalsForStream, getSubjectsForGoal } from '../data/goalIntelligence';
 
 // ─────────────────────────────────────────────────────────────
 //  Inline SVG Icons
@@ -16,21 +16,9 @@ const UploadIcon   = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 
 const FileIcon     = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>;
 
 // ─────────────────────────────────────────────────────────────
-//  Adaptive data: subjects per goal
+//  All subjects fallback (used when no goal is selected)
 // ─────────────────────────────────────────────────────────────
-const GOAL_SUBJECTS = {
-  'Engineering (JEE)':        ['Mathematics', 'Physics', 'Chemistry'],
-  'Medical (NEET)':           ['Biology', 'Physics', 'Chemistry'],
-  'Campus Placement':         ['Aptitude', 'Computer Science', 'English', 'Data Structures', 'Mathematics'],
-  'Higher Studies (MS/MBA)':  ['Mathematics', 'English', 'Aptitude', 'Economics', 'Statistics'],
-  'Civil Services (UPSC)':    ['History', 'Geography', 'Political Science', 'Economics', 'English'],
-  'Creative / Design':        ['English', 'General Aptitude', 'Art', 'Psychology'],
-  'Business / Startup':       ['Economics', 'Mathematics', 'Business Studies', 'English', 'Accountancy'],
-  'Commerce':                 ['Accountancy', 'Economics', 'Business Studies', 'Mathematics', 'English'],
-  'Other':                    ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'Economics', 'Computer Science', 'History', 'Geography'],
-};
-
-const ALL_SUBJECTS = [...new Set(Object.values(GOAL_SUBJECTS).flat())].sort();
+const ALL_SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','English','Economics','Computer Science','History','Geography','Accountancy','Business Studies','Statistics','Psychology','Political Science','Art','General Knowledge'];
 
 const WEAK_TOPICS = [
   'Algebra', 'Calculus', 'Organic Chemistry', 'Thermodynamics', 'Kinematics',
@@ -52,6 +40,65 @@ const STEPS = [
   { id: 2, title: 'Strengths & Gaps',   subtitle: 'Where you shine and where you struggle',             icon: Brain },
   { id: 3, title: 'Study Habits',       subtitle: 'How and when you study best',                        icon: Clock },
   { id: 4, title: 'Performance Data',   subtitle: 'Your recent scores and test results',                icon: BarChart2 },
+  { id: 5, title: 'AI Learning Analysis', subtitle: 'A quick AI conversation to understand you deeply', icon: Sparkles },
+];
+
+// ─────────────────────────────────────────────────────────────
+//  AI Chat Questions for Step 5
+// ─────────────────────────────────────────────────────────────
+const AI_CHAT_QUESTIONS = [
+  {
+    id: 'learningStyle',
+    question: "How do you learn best? Think about what makes concepts really click for you.",
+    options: [
+      { label: '📊 Visual — diagrams, charts, videos', value: 'Visual' },
+      { label: '👂 Auditory — lectures, discussions', value: 'Auditory' },
+      { label: '✍️ Reading/Writing — notes, textbooks', value: 'Reading/Writing' },
+      { label: '🔬 Kinesthetic — hands-on practice', value: 'Kinesthetic' },
+    ],
+  },
+  {
+    id: 'studyBehavior',
+    question: "How would you honestly describe your study consistency?",
+    options: [
+      { label: '🎯 Disciplined — I study every day on schedule', value: 'Disciplined' },
+      { label: '🌊 Inconsistent — depends on my mood', value: 'Inconsistent' },
+      { label: '🔥 Exam-driven — I only study before tests', value: 'Exam-driven' },
+      { label: '🌀 Binge learner — intense bursts, then breaks', value: 'Binge' },
+    ],
+  },
+  {
+    id: 'focusLevel',
+    question: "How long can you stay deeply focused on a difficult topic without getting distracted?",
+    options: [
+      { label: '⚡ Less than 15 minutes', value: 'Very Low' },
+      { label: '⏱️ 15–30 minutes', value: 'Low' },
+      { label: '🧠 30–60 minutes', value: 'Moderate' },
+      { label: '🏆 Over 1 hour', value: 'High' },
+    ],
+  },
+  {
+    id: 'primaryStruggle',
+    question: "Which of these feels like your biggest academic roadblock right now?",
+    options: [
+      { label: '🤔 Understanding concepts — things don\'t click', value: 'Conceptual Understanding' },
+      { label: '📝 Applying knowledge — theory OK, practice hard', value: 'Application' },
+      { label: '🔄 Revision — I forget what I learned', value: 'Retention & Revision' },
+      { label: '⏰ Time management — too much to cover', value: 'Time Management' },
+      { label: '😰 Exam anxiety — I freeze under pressure', value: 'Exam Anxiety' },
+    ],
+  },
+  {
+    id: 'motivation',
+    question: "What drives you to study the most?",
+    options: [
+      { label: '🏅 Competitive drive — I want to be the best', value: 'Competition' },
+      { label: '🎯 Goal-oriented — clear target like JEE/NEET', value: 'Goal-oriented' },
+      { label: '💡 Curiosity — I genuinely enjoy learning', value: 'Curiosity' },
+      { label: '👨‍👩‍👧 External — family expectations, peer pressure', value: 'External' },
+      { label: '😟 Fear-driven — afraid of falling behind', value: 'Fear-driven' },
+    ],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -167,7 +214,7 @@ const LoadingScreen = ({ activeStep }) => (
 // ─────────────────────────────────────────────────────────────
 //  Main Component
 // ─────────────────────────────────────────────────────────────
-const OnboardingFlow = ({ onComplete, onClose, userId }) => {
+const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail }) => {
   const [step, setStep] = useState(0);
   const [dir, setDir]   = useState(1);   // 1 = forward, -1 = backward
   const [isGenerating, setIsGenerating] = useState(false);
@@ -189,7 +236,16 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
     mistakeType: '', otherMistakeType: '',
     // File upload
     uploadedFileData: null, uploadedFileName: '',
+    // AI Chat (Step 5)
+    aiChat: {},
   });
+
+  // AI Chat interaction state
+  const [chatIndex, setChatIndex] = useState(0);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [isAiTyping, setIsAiTyping] = useState(false);
+  const chatEndRef = useRef(null);
+  const chatInitialized = useRef(false);
 
   const fileInputRef = useRef(null);
 
@@ -199,8 +255,55 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
     [key]: p[key].includes(val) ? p[key].filter(v => v !== val) : [...p[key], val],
   }));
 
-  // Get adaptive subjects based on chosen goal
-  const adaptiveSubjects = GOAL_SUBJECTS[data.targetGoal] || ALL_SUBJECTS;
+  // Get adaptive subjects based on chosen goal (from central intelligence)
+  const adaptiveSubjects = data.targetGoal ? getSubjectsForGoal(data.targetGoal) : ALL_SUBJECTS;
+
+  // ── Dynamic Class → Stream dependency ──
+  const CLASS_OPTIONS = ['Class 11', 'Class 12', '1st Year UG', '2nd Year UG', '3rd Year UG', '4th Year UG', 'Postgraduate'];
+
+  const getClassCategory = (cls) => {
+    if (!cls) return null;
+    if (cls.startsWith('Class')) return 'school';
+    if (cls.includes('UG')) return 'ug';
+    if (cls === 'Postgraduate') return 'pg';
+    return null;
+  };
+
+  const STREAM_OPTIONS = {
+    school: ['Science', 'Commerce', 'Arts / Humanities', 'Other'],
+    ug:     ['Engineering (B.Tech)', 'Business (BBA)', 'Science (BSc)', 'Arts (BA)', 'Other'],
+    pg:     ['MBA', 'MTech', 'MSc', 'MA', 'MCA', 'Other'],
+  };
+
+  const STREAM_LABELS = {
+    school: 'Stream',
+    ug:     'Field of Study',
+    pg:     'Specialization',
+  };
+
+  const classCategory = getClassCategory(data.currentClass);
+  const streamOptions = STREAM_OPTIONS[classCategory] || [];
+  const streamLabel   = STREAM_LABELS[classCategory] || 'Stream';
+
+  // Dynamic goals based on selected stream
+  const goalOptions = data.stream ? getGoalsForStream(data.stream) : [];
+
+  // Handler: when class changes, reset stream and goal if category changed
+  const handleClassChange = (newClass) => {
+    const oldCat = getClassCategory(data.currentClass);
+    const newCat = getClassCategory(newClass);
+    setData(p => ({
+      ...p,
+      currentClass: newClass,
+      stream: oldCat !== newCat ? '' : p.stream,
+      targetGoal: oldCat !== newCat ? '' : p.targetGoal,
+    }));
+  };
+
+  // Handler: when stream changes, reset goal
+  const handleStreamChange = (newStream) => {
+    setData(p => ({ ...p, stream: newStream, targetGoal: '' }));
+  };
 
   // Multi-subject helpers
   const updateEntry = (idx, field, val) => {
@@ -236,8 +339,62 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
     if (step === 1) return data.strongSubjects.length > 0 && data.weakSubjects.length > 0 && data.confidence;
     if (step === 2) return data.studyHours && data.studyTime && data.practiceStyle;
     if (step === 3) return data.subjectEntries[0].subject && data.subjectEntries[0].score;
+    if (step === 4) return chatIndex >= AI_CHAT_QUESTIONS.length; // all chat questions answered
     return false;
   };
+
+  // ── AI Chat Logic ──
+  const startAiChat = () => {
+    if (chatInitialized.current) return;
+    chatInitialized.current = true;
+    setChatMessages([]);
+    setChatIndex(0);
+    // Show first AI question with typing animation
+    setIsAiTyping(true);
+    setTimeout(() => {
+      setChatMessages([{ sender: 'ai', text: AI_CHAT_QUESTIONS[0].question, qIdx: 0 }]);
+      setIsAiTyping(false);
+    }, 800);
+  };
+
+  const handleChatAnswer = (questionId, answer) => {
+    // Save answer
+    setData(p => ({ ...p, aiChat: { ...p.aiChat, [questionId]: answer.value } }));
+
+    // Add user message
+    setChatMessages(prev => [...prev, { sender: 'user', text: answer.label }]);
+
+    const nextIdx = chatIndex + 1;
+    setChatIndex(nextIdx);
+
+    if (nextIdx < AI_CHAT_QUESTIONS.length) {
+      // Show AI typing, then next question
+      setIsAiTyping(true);
+      setTimeout(() => {
+        setChatMessages(prev => [...prev, { sender: 'ai', text: AI_CHAT_QUESTIONS[nextIdx].question, qIdx: nextIdx }]);
+        setIsAiTyping(false);
+      }, 600 + Math.random() * 400);
+    } else {
+      // Chat complete — show completion message
+      setIsAiTyping(true);
+      setTimeout(() => {
+        setChatMessages(prev => [...prev, { sender: 'ai', text: "Perfect! I now have a deep understanding of your learning profile. Let's generate your personalized AI insights! 🎯", done: true }]);
+        setIsAiTyping(false);
+      }, 700);
+    }
+  };
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, isAiTyping]);
+
+  // Initialize chat when entering step 4 (0-indexed)
+  useEffect(() => {
+    if (step === 4) {
+      startAiChat();
+    }
+  }, [step]);
 
   // Navigate
   const goNext = () => { setDir(1);  setStep(s => s + 1); setError(null); window.scrollTo({top:0, behavior:'smooth'}); };
@@ -286,7 +443,61 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
         hasFileUpload: !!data.uploadedFileData,
       };
 
-      const DEV_MODE = true;
+      // ── 1. Build clean score arrays for Firestore save ──
+      const scores = data.subjectEntries
+        .filter(e => e.subject && e.score)
+        .map(e => ({
+          subject: e.subject,
+          score: Number(e.score) || 0,
+          correctQs: Number(e.correctQ) || 0,
+          incorrectQs: Number(e.incorrectQ) || 0,
+        }));
+
+      const strongSubjects = [
+        ...data.strongSubjects.filter(s => s !== '__other__'),
+        ...(data.otherStrong ? [data.otherStrong] : []),
+      ];
+      const weakSubjects = [
+        ...data.weakSubjects.filter(s => s !== '__other__'),
+        ...(data.otherWeak ? [data.otherWeak] : []),
+      ];
+      const weakTopics = [
+        ...data.weakTopics.filter(t => t !== '__other__'),
+        ...(data.otherWeakTopic ? [data.otherWeakTopic] : []),
+      ];
+
+      // ── 2. Save to Firestore before API call ──
+      if (uid !== 'anonymous') {
+        const userData = {
+          name: userName || '',
+          email: userEmail || '',
+          class: data.currentClass || '',
+          stream: data.stream || '',
+          goal: data.targetGoal || '',
+          interests: [],
+          strongSubjects,
+          weakSubjects,
+          scores,
+          weakTopics,
+          aiChat: data.aiChat || {},
+        };
+        console.log('[Firestore] Saving clean userData:', JSON.stringify(userData, null, 2));
+        saveOnboardingData(uid, userData);
+      }
+
+      // ── 3. Build API payload ──
+      const apiPayload = {
+        scores,
+        weakSubjects,
+        strongSubjects,
+        goal: data.targetGoal,
+        // Full enriched data for deeper Gemini context
+        inputData: enrichedData,
+      };
+
+      console.log('[API] Sending to /api/v1/analyze:', JSON.stringify(apiPayload, null, 2));
+
+      // ── 4. Call the real AI API (NO fallback/mock) ──
       let res;
       let errBody = {};
       try {
@@ -295,59 +506,32 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ inputData: enrichedData }),
         });
-        if (!res.ok) errBody = await res.json().catch(() => ({}));
-      } catch (networkErr) {
-        // Network error (server offline)
-        res = { ok: false, status: 'Network Error' };
-        errBody = { error: 'Failed to fetch (Server might be offline)' };
-      }
-      
-      if (!res.ok) {
-        console.error(`[API ERROR /analyze] Status: ${res.status}`, errBody);
-        
-        if (DEV_MODE) {
-          console.warn("DEV_MODE active: Using fallback mock AI profile to bypass API quotas.");
-          clearInterval(iv);
-          setLoadingStep(LOADING_STEPS.length - 1);
-          await new Promise(r => setTimeout(r, 600));
-          
-          const mockOutput = {
-            strongSubjects: [{"subject": "Mock Core", "confidence": 90, "reason": "Consistent high scores"}],
-            weakSubjects: [],
-            subjectScores: [],
-            learningProfile: { "learningStyle": "Visual", "consistencyLevel": "High", "focusLevel": "High" },
-            learningIssues: [],
-            recommendedFocus: [{ "subject": "Computer Science Development", "priority": "high", "reason": "Build core systems.", "actionPlan": ["Review docs", "Build projects"] }],
-            careerSuggestions: [{"career": "Software Engineer (DEV FALLBACK)", "matchScore": 99, "reason": "Matches all developmental attributes perfectly."}],
-            insights: { "strengthSummary": "Great logic.", "weaknessSummary": "None", "overallAnalysis": "Excellent." }
-          };
-          
-          localStorage.setItem(`onboarding_complete_${uid}`, 'true');
-          localStorage.setItem('userProfile', JSON.stringify({ goal: enrichedData.targetGoal }));
-          onComplete({ aiOutput: mockOutput, inputData: enrichedData, sessionId, uid });
-          return;
+        if (!res.ok) {
+          errBody = await res.json().catch(() => ({}));
         }
+      } catch (networkErr) {
+        console.error('[API] Network error — server may be offline:', networkErr.message);
+        clearInterval(iv);
+        throw new Error('Cannot reach the AI server. Please ensure `npm run server` is running on port 5000.');
+      }
 
-        throw new Error(errBody.error || `Server error ${res.status}`);
+      if (!res.ok) {
+        console.error(`[API] /analyze failed — HTTP ${res.status}:`, errBody);
+        clearInterval(iv);
+        throw new Error(
+          errBody.error ||
+          `AI server returned error ${res.status}. Check server logs for details.`
+        );
       }
 
       const aiOutput = await res.json();
+      console.log('[API] Response from /api/v1/analyze:', JSON.stringify(aiOutput, null, 2));
+
       clearInterval(iv);
       setLoadingStep(LOADING_STEPS.length - 1);
       await new Promise(r => setTimeout(r, 600));
 
-      localStorage.setItem(`onboarding_complete_${uid}`, 'true');
-      localStorage.setItem('userProfile', JSON.stringify({ goal: enrichedData.targetGoal }));
       onComplete({ aiOutput, inputData: enrichedData, sessionId, uid });
-
-      // Background Firestore save
-      if (uid !== 'anonymous') {
-        const { uploadedFileData: _fd, ...safeData } = enrichedData;
-        const ref = doc(collection(db, 'results', uid, 'sessions'), sessionId);
-        setDoc(ref, { uid, sessionId, inputData: safeData, aiOutput, createdAt: new Date().toISOString() })
-          .then(() => console.log('[Firestore] Session saved:', sessionId))
-          .catch(e => console.warn('[Firestore] Background save failed:', e.message));
-      }
 
     } catch (err) {
       clearInterval(iv);
@@ -464,46 +648,48 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
                     <h3 className="text-lg font-bold text-white mb-6">Academic Info</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="mb-4">
-                        <Select label="Current Class / Year" value={data.currentClass} onChange={v => set('currentClass', v)}
-                          options={['Class 9', 'Class 10', 'Class 11', 'Class 12', '1st Year UG', '2nd Year UG', '3rd Year UG', '4th Year UG', 'Postgraduate']}
+                        <Select label="Current Class / Year" value={data.currentClass} onChange={handleClassChange}
+                          options={CLASS_OPTIONS}
                           placeholder="Select your class" />
                       </div>
                       <div className="mb-4">
-                        <Label>Stream</Label>
-                        <RadioGroup options={['Science', 'Commerce', 'Arts / Humanities', 'Other']} value={data.stream} onChange={v => set('stream', v)}/>
+                        <Label>{streamLabel}{classCategory === 'ug' && <span className="text-indigo-400 normal-case font-normal text-xs ml-1">(as per your degree)</span>}</Label>
+                        {streamOptions.length > 0 ? (
+                          <RadioGroup options={streamOptions} value={data.stream} onChange={handleStreamChange}/>
+                        ) : (
+                          <p className="text-gray-500 text-sm italic">Select your class / year first</p>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <hr className="border-[#1f2937]/80" />
 
-                  {/* section 2 */}
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Goal Selection</h3>
-                    <div className="mb-4">
-                      <Label>What do you want to pursue?</Label>
-                      <p className="text-xs text-gray-500 mb-4 font-medium">Core subjects will dynamically align to your selection.</p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {['Engineering (JEE)', 'Medical (NEET)', 'Campus Placement', 'Higher Studies (MS/MBA)', 'Civil Services (UPSC)', 'Commerce', 'Creative / Design', 'Business / Startup', 'Other'].map(g => (
+                    <h3 className="text-lg font-bold text-white mb-2">Goal Selection</h3>
+                    <p className="text-xs text-gray-500 mb-5 font-medium">
+                      {data.stream ? `Showing goals for ${data.stream}` : 'Select stream to see goals'}
+                    </p>
+                    {goalOptions.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        {goalOptions.map(g => (
                           <button key={g} type="button" onClick={() => set('targetGoal', g)}
-                            className={`text-left px-5 py-4 rounded-xl border text-sm font-semibold transition-all duration-200 active:scale-95 ${
-                              data.targetGoal === g
-                                ? 'bg-indigo-600/10 border-indigo-500 shadow-md shadow-indigo-500/10 text-indigo-300'
-                                : 'bg-[#1f2937]/30 border-[#1f2937] text-gray-400 hover:bg-[#374151] hover:text-gray-200 hover:-translate-y-0.5'
-                            }`}>{g}</button>
+                            className={`text-left px-5 py-4 rounded-xl border text-sm font-semibold transition-all duration-200 active:scale-95 ${data.targetGoal === g ? 'bg-indigo-600/10 border-indigo-500 text-indigo-300' : 'bg-[#1f2937]/30 border-[#1f2937] text-gray-400 hover:bg-[#374151] hover:text-gray-200'}`}>{g}</button>
                         ))}
                       </div>
+                    ) : (
+                      <div className="py-10 border border-dashed border-[#1f2937] rounded-xl text-center mb-4">
+                        <p className="text-gray-500 text-sm">Pick <span className="text-indigo-400">class</span> and <span className="text-indigo-400">stream</span> first to unlock goals</p>
+                      </div>
+                    )}
+                    {data.targetGoal && (
+                      <div className="mt-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-sm text-indigo-300 flex items-start gap-3">
+                        <SparkleIcon />
+                        <p>Subjects for <strong>{data.targetGoal}</strong>: <span className="block mt-1 text-gray-300">{adaptiveSubjects.join(', ')}</span></p>
+                      </div>
+                    )}
 
-                      {data.targetGoal && (
-                        <div className="mt-6 bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-sm text-indigo-300 flex items-start gap-3">
-                          <SparkleIcon />
-                          <p>Subjects actively loaded for <strong>{data.targetGoal}</strong>:<span className="block mt-1 text-gray-300">{adaptiveSubjects.join(', ')}</span></p>
-                        </div>
-                      )}
-                    </div>
                   </div>
-
                   <hr className="border-[#1f2937]/80" />
 
                   {/* section 3 */}
@@ -727,6 +913,107 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
 
                 </div>
               )}
+
+              {/* ═══ STEP 5: AI Learning Analysis ═══ */}
+              {step === 4 && (
+                <div className="space-y-6">
+                  {/* AI Avatar + Chat Header */}
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white shrink-0">
+                      <Sparkles size={22} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">ShikshaSetu AI</h3>
+                      <p className="text-xs text-gray-500">Personalized learning profiler</p>
+                    </div>
+                    <div className="ml-auto flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <span className="text-xs text-green-400 font-medium">Online</span>
+                    </div>
+                  </div>
+
+                  {/* Chat Container */}
+                  <div className="bg-[#0d1117] rounded-2xl border border-[#1f2937]/70 p-1">
+                    <div className="h-[420px] overflow-y-auto p-5 space-y-4 scroll-smooth" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1f2937 transparent' }}>
+
+                      {chatMessages.map((msg, i) => (
+                        <div key={i}
+                          className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                          style={{ animation: 'chatFadeIn 0.35s ease-out' }}
+                        >
+                          {msg.sender === 'ai' && (
+                            <div className="w-7 h-7 rounded-lg bg-indigo-600/20 flex items-center justify-center mr-3 mt-1 shrink-0">
+                              <Sparkles size={14} className="text-indigo-400" />
+                            </div>
+                          )}
+                          <div className={`max-w-[80%] px-5 py-3.5 rounded-2xl text-sm leading-relaxed ${
+                            msg.sender === 'user'
+                              ? 'bg-indigo-600 text-white rounded-br-md shadow-lg shadow-indigo-600/20'
+                              : 'bg-[#1f2937]/60 text-gray-200 rounded-bl-md border border-[#1f2937]'
+                          } ${msg.done ? 'border-green-500/30 bg-green-500/5' : ''}`}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* AI Typing Indicator */}
+                      {isAiTyping && (
+                        <div className="flex justify-start" style={{ animation: 'chatFadeIn 0.3s ease-out' }}>
+                          <div className="w-7 h-7 rounded-lg bg-indigo-600/20 flex items-center justify-center mr-3 mt-1 shrink-0">
+                            <Sparkles size={14} className="text-indigo-400" />
+                          </div>
+                          <div className="bg-[#1f2937]/60 border border-[#1f2937] rounded-2xl rounded-bl-md px-5 py-4 flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                        </div>
+                      )}
+
+                      <div ref={chatEndRef} />
+                    </div>
+
+                    {/* Answer Options (shown below chat) */}
+                    {!isAiTyping && chatIndex < AI_CHAT_QUESTIONS.length && chatMessages.length > 0 && (
+                      <div className="px-5 pb-5 pt-3 border-t border-[#1f2937]/50">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-3">Choose your answer</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {AI_CHAT_QUESTIONS[chatIndex].options.map((opt, oi) => (
+                            <button key={oi} type="button"
+                              onClick={() => handleChatAnswer(AI_CHAT_QUESTIONS[chatIndex].id, opt)}
+                              className="text-left px-4 py-3.5 rounded-xl text-sm font-medium border border-[#1f2937] bg-[#1f2937]/30 text-gray-300 hover:bg-indigo-600/10 hover:border-indigo-500/40 hover:text-indigo-200 transition-all duration-200 active:scale-[0.97]"
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Completion state */}
+                    {chatIndex >= AI_CHAT_QUESTIONS.length && !isAiTyping && (
+                      <div className="px-5 pb-5 pt-3 border-t border-green-500/20">
+                        <div className="flex items-center gap-3 text-green-400">
+                          <CheckIcon />
+                          <span className="text-sm font-semibold">Analysis complete — click Generate to see your results</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Progress indicator */}
+                  <div className="flex items-center justify-between text-xs text-gray-500 px-1">
+                    <span>{Math.min(chatIndex, AI_CHAT_QUESTIONS.length)} of {AI_CHAT_QUESTIONS.length} questions</span>
+                    <div className="flex gap-1.5">
+                      {AI_CHAT_QUESTIONS.map((_, i) => (
+                        <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${
+                          i < chatIndex ? 'w-6 bg-indigo-500' : i === chatIndex ? 'w-6 bg-indigo-500/40' : 'w-3 bg-[#1f2937]'
+                        }`} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Blank spacer to push footer cleanly on long pages if needed, though footer is fixed or attached */}
@@ -743,7 +1030,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
               <ArrowLeft/> {step === 0 ? 'Cancel' : 'Go Back'}
             </button>
 
-            {step < 3 ? (
+            {step < STEPS.length - 1 ? (
               <button onClick={goNext} disabled={!canNext()}
                 className={`flex items-center gap-2 font-bold py-3 px-8 rounded-xl text-sm transition-all duration-300 ${
                   !canNext() ? 'bg-[#1f2937]/30 text-gray-600 border border-[#1f2937]/50 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] border border-indigo-500 active:scale-95'
@@ -767,6 +1054,10 @@ const OnboardingFlow = ({ onComplete, onClose, userId }) => {
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(12px) scale(0.99); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes chatFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
