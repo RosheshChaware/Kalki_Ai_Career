@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Target, CheckCircle2, Circle, MessageSquare, Send, RefreshCw, AlertCircle, FileText, CheckCheck, XCircle, Sparkles } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const AdaptiveRoadmap = ({ aiResult, user }) => {
   const [roadmap, setRoadmap] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -107,7 +109,7 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
       let errData = {};
 
       try {
-        res = await fetch('http://localhost:5000/api/v1/roadmap/update', {
+        res = await fetch(`${API_URL}/api/v1/roadmap/update`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -167,7 +169,7 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
       let res;
       let errData = {};
       try {
-        res = await fetch('http://localhost:5000/api/v1/roadmap/chat', {
+        res = await fetch(`${API_URL}/api/v1/roadmap/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

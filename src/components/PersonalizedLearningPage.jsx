@@ -32,6 +32,8 @@ import AdaptiveRoadmap from './AdaptiveRoadmap';
 import CareerPathView from './CareerPathView';
 import SettingsView from './SettingsView';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981'];
 const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, onOpenPracticeQuestions, onOpenCareerDetails, onMenuChange, aiResult: freshResult }) => {
   const { user } = useAuth();
@@ -85,11 +87,11 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
 
       console.log('[Dashboard] Re-analyzing with saved user data:', inputData);
 
-      const res = await fetch('http://localhost:5000/api/v1/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputData }),
-      });
+        const res = await fetch(`${API_URL}/api/v1/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputData }),
+        });
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
@@ -426,11 +428,11 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
         <div className="p-8 max-w-[1400px] w-full mx-auto space-y-8">
           
           {activeMenu === 'Roadmap' ? (
-            <AdaptiveRoadmap aiResult={data.aiOutput} user={user} />
+            <AdaptiveRoadmap aiResult={data?.aiOutput} user={user} />
           ) : activeMenu === 'Career Path' ? (
-            <CareerPathView aiResult={data.aiOutput} />
+            <CareerPathView aiResult={data?.aiOutput} />
           ) : activeMenu === 'Settings' ? (
-            <SettingsView user={user} inputData={data.inputData} />
+            <SettingsView user={user} inputData={data?.inputData} />
           ) : (
             <>
               {/* ── ROW 1: SUMMARY CARDS ── */}

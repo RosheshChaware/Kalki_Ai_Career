@@ -1,137 +1,185 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Video, Globe, ArrowLeft, BookOpen, Target, Briefcase, Sparkles } from 'lucide-react';
+import {
+  FileText, Video, Globe, ArrowLeft, BookOpen, Target, Sparkles,
+  ExternalLink, Loader2, AlertCircle, Brain, ChevronDown, ChevronUp
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserData } from '../lib/firestoreService';
-import { getGoalResources } from '../data/goalIntelligence';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 const getIconForType = (type) => {
-  switch (type) {
-    case 'PDF': return <FileText size={16} />;
-    case 'Video': return <Video size={16} />;
-    case 'Article': return <Globe size={16} />;
-    default: return <FileText size={16} />;
-  }
+  if (type === 'Video') return <Video size={14} />;
+  if (type === 'Article') return <Globe size={14} />;
+  return <FileText size={14} />;
 };
 
-const getButtonLabel = (type) => {
-  switch (type) {
-    case 'PDF': return 'Open PDF';
-    case 'Video': return 'Watch on YouTube';
-    case 'Article': return 'Read on Web';
-    default: return 'Open Resource';
-  }
+const difficultyColor = (d) => {
+  if (d === 'Beginner') return 'text-green-400 bg-green-400/10 border-green-400/20';
+  if (d === 'Advanced') return 'text-red-400 bg-red-400/10 border-red-400/20';
+  return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
 };
 
-const MaterialCard = ({ item }) => {
-  return (
-    <div className="bg-[#1C1C24] rounded-2xl border border-[#ffffff0A] flex flex-col h-full hover:border-indigo-500/30 transition-all duration-300 group overflow-hidden shadow-lg">
-      <div className="h-40 w-full relative overflow-hidden bg-[#252530]">
-        {item.thumb ? (
-          <img src={item.thumb} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-500/20" />
+const priorityColor = (p) => {
+  if (p === 'high') return 'text-red-400 bg-red-400/10';
+  if (p === 'low') return 'text-green-400 bg-green-400/10';
+  return 'text-yellow-400 bg-yellow-400/10';
+};
+
+// ── Resource Card ─────────────────────────────────────────────────────────────
+const ResourceCard = ({ item }) => (
+  <div className="bg-[#1C1C24] rounded-2xl border border-[#ffffff0A] flex flex-col hover:border-indigo-500/30 transition-all duration-300 group shadow-lg overflow-hidden">
+    <div className="h-2 w-full bg-gradient-to-r from-indigo-600/40 via-purple-600/40 to-transparent" />
+    <div className="p-5 flex-1 flex flex-col gap-3">
+      <div className="flex items-start justify-between gap-2">
+        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${difficultyColor(item.difficulty)}`}>
+          {getIconForType(item.type)} {item.type}
+        </span>
+        {item.difficulty && (
+          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${difficultyColor(item.difficulty)}`}>
+            {item.difficulty}
+          </span>
         )}
-        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md flex items-center gap-1.5 text-white shadow-md border border-white/10">
-          {getIconForType(item.type)}
-          <span className="text-[10px] font-bold uppercase tracking-wide">{item.type}</span>
-        </div>
       </div>
+      <div className="flex-1">
+        <h3 className="text-white font-bold mb-1 leading-tight group-hover:text-indigo-400 transition-colors line-clamp-2">{item.title}</h3>
+        {item.subject && <p className="text-[11px] text-indigo-300/70 font-semibold mb-2">{item.subject}</p>}
+        <p className="text-sm text-gray-400 line-clamp-3">{item.description}</p>
+      </div>
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-600 hover:text-white text-indigo-400 text-sm font-bold transition-all border border-indigo-500/20 hover:border-transparent"
+      >
+        {item.type === 'Video' ? 'Watch Video' : 'Read Article'} <ExternalLink size={14} />
+      </a>
+    </div>
+  </div>
+);
 
-      <div className="p-5 flex-1 flex flex-col">
-        <div className="flex-1">
-          <h3 className="text-white font-bold mb-2 leading-tight group-hover:text-indigo-400 transition-colors line-clamp-2 text-lg">{item.title}</h3>
-          <p className="text-sm text-gray-400 line-clamp-2">{item.description}</p>
+// ── Topic Card (accordion) ─────────────────────────────────────────────────────
+const TopicCard = ({ topic }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-[#1C1C24] rounded-2xl border border-[#ffffff0A] overflow-hidden transition-all">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between p-5 hover:bg-[#ffffff05] transition-colors"
+      >
+        <div className="flex items-center gap-3 text-left">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${topic.priority === 'high' ? 'bg-red-400' : topic.priority === 'low' ? 'bg-green-400' : 'bg-yellow-400'}`} />
+          <div>
+            <p className="text-white font-bold leading-tight">{topic.topic}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">{topic.subject}</p>
+          </div>
         </div>
-        <div className="mt-5 pt-4 border-t border-[#ffffff0A]">
-          <a
-            href={item.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-center py-2.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500 hover:text-white text-indigo-400 text-sm font-bold transition-all"
-          >
-            {getButtonLabel(item.type)}
-          </a>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${priorityColor(topic.priority)}`}>
+            {topic.priority}
+          </span>
+          {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
         </div>
-      </div>
+      </button>
+      {open && (
+        <div className="px-5 pb-5 border-t border-[#ffffff0A] pt-4 space-y-3">
+          <p className="text-gray-300 text-sm leading-relaxed">{topic.explanation}</p>
+          {topic.keyPoints?.length > 0 && (
+            <ul className="space-y-2">
+              {topic.keyPoints.map((pt, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
+                  <span className="text-indigo-400 mt-0.5">•</span> {pt}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
-const Section = ({ title, reason, icon: Icon, items }) => {
-  if (!items || items.length === 0) return null;
-  return (
-    <section className="mb-14">
-      <div className="flex items-start gap-4 mb-6 pt-2">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1C1C24] to-[#252530] border border-[#ffffff10] flex items-center justify-center text-indigo-400 shadow-md shrink-0">
-          <Icon size={24} />
-        </div>
-        <div>
-          <h2 className="text-2xl font-black text-white tracking-tight">{title}</h2>
-          {reason && <p className="text-sm text-indigo-300/80 mt-1 font-medium">{reason}</p>}
-        </div>
+// ── Section ────────────────────────────────────────────────────────────────────
+const Section = ({ title, subtitle, icon: Icon, children }) => (
+  <section className="mb-14">
+    <div className="flex items-start gap-4 mb-6">
+      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#1C1C24] to-[#252530] border border-[#ffffff10] flex items-center justify-center text-indigo-400 shadow-md shrink-0">
+        <Icon size={22} />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {items.map(item => (
-          <MaterialCard key={item.id} item={item} />
-        ))}
+      <div>
+        <h2 className="text-xl font-black text-white tracking-tight">{title}</h2>
+        {subtitle && <p className="text-sm text-indigo-300/70 mt-0.5 font-medium">{subtitle}</p>}
       </div>
-    </section>
-  );
-};
+    </div>
+    {children}
+  </section>
+);
 
+// ── Main Component ─────────────────────────────────────────────────────────────
 const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(!freshResult);
-  const [userGoal, setUserGoal] = useState('');
-  const [userClass, setUserClass] = useState('');
-  const [resources, setResources] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [content, setContent] = useState(null);
+  const [profileMeta, setProfileMeta] = useState({ goal: '', cls: '' });
 
   useEffect(() => {
-    const loadData = async () => {
+    const load = async () => {
       setLoading(true);
+      setError(null);
       try {
-        // Priority 1: use freshResult passed from onboarding
+        let goal = '', cls = '', subjects = [], weakTopics = [], strongSubjects = [];
+
+        // Priority 1: freshResult from onboarding
         if (freshResult?.inputData) {
-          const goal = freshResult.inputData.targetGoal || '';
-          const cls = freshResult.inputData.currentClass || '';
-          setUserGoal(goal);
-          setUserClass(cls);
-          setResources(getGoalResources(goal));
+          const d = freshResult.inputData;
+          goal = d.targetGoal || '';
+          cls = d.currentClass || '';
+          subjects = d.strongSubjectsAll || [];
+          weakTopics = d.weakTopicsAll || [];
+          strongSubjects = d.strongSubjectsAll || [];
+        } else if (user) {
+          // Priority 2: Firestore
+          const userData = await getUserData(user.uid);
+          if (userData) {
+            goal = userData.goal || '';
+            cls = userData.class || '';
+            subjects = [...(userData.strongSubjects || []), ...(userData.weakSubjects || [])];
+            weakTopics = userData.weakTopics || [];
+            strongSubjects = userData.strongSubjects || [];
+          }
+        }
+
+        if (!goal) {
+          setError('No learning goal found. Please complete onboarding first.');
           return;
         }
 
-        // Priority 2: fetch from Firestore users/{uid}
-        if (user) {
-          const userData = await getUserData(user.uid);
-          if (userData) {
-            const goal = userData.goal || '';
-            const cls = userData.class || '';
-            setUserGoal(goal);
-            setUserClass(cls);
-            setResources(getGoalResources(goal));
-          }
+        setProfileMeta({ goal, cls });
+
+        const res = await fetch(`${API_URL}/api/v1/content/study-materials`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal, subjects, weakTopics, strongSubjects, currentClass: cls }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Server error (${res.status})`);
         }
+
+        const data = await res.json();
+        setContent(data);
       } catch (e) {
-        console.error('[StudyMaterials] Fetch error:', e);
+        console.error('[StudyMaterials] Error:', e.message);
+        setError(e.message || 'Unable to load content. Please try again.');
       } finally {
         setLoading(false);
       }
     };
-    loadData();
+    load();
   }, [user, freshResult]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center flex-col gap-4">
-        <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-        <p className="text-gray-400 text-sm font-medium">Curating your personalized resources...</p>
-      </div>
-    );
-  }
-
-  const conceptItems   = resources.filter(m => m.category === 'Concept Learning');
-  const practiceItems  = resources.filter(m => m.category === 'Practice Resources');
-  const revisionItems  = resources.filter(m => m.category === 'Revision Notes');
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-gray-200 font-sans selection:bg-indigo-500/30 pb-20">
@@ -141,75 +189,114 @@ const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
           <div className="flex items-center gap-4">
             <button
               onClick={onClose}
-              className="w-10 h-10 rounded-xl bg-[#1C1C24] border border-[#ffffff0A] flex items-center justify-center hover:bg-[#252530] hover:text-white transition-all group"
+              className="w-10 h-10 rounded-xl bg-[#1C1C24] border border-[#ffffff0A] flex items-center justify-center hover:bg-[#252530] transition-all group"
             >
               <ArrowLeft size={20} className="text-gray-400 group-hover:-translate-x-0.5 transition-transform" />
             </button>
             <div>
               <h1 className="text-xl font-bold text-white leading-tight flex items-center gap-2">
-                Study Materials 📚{' '}
+                Study Materials 📚
                 <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] uppercase font-bold border border-indigo-500/20">
-                  {userGoal ? 'Goal-Matched' : 'Smart Match'}
+                  AI Generated
                 </span>
               </h1>
               <p className="text-xs text-gray-400 mt-0.5">
-                {userGoal
-                  ? `Curated for: ${userGoal}${userClass ? ` · ${userClass}` : ''}`
-                  : 'Resources intelligently tuned to your profile'}
+                {profileMeta.goal
+                  ? `Personalized for: ${profileMeta.goal}${profileMeta.cls ? ` · ${profileMeta.cls}` : ''}`
+                  : 'AI-curated resources for your profile'}
               </p>
             </div>
           </div>
-          {/* Goal badge */}
-          {userGoal && (
+          {profileMeta.goal && (
             <div className="hidden sm:flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-4 py-2">
               <Sparkles size={14} className="text-indigo-400" />
-              <span className="text-xs text-indigo-300 font-semibold">{userGoal}</span>
+              <span className="text-xs text-indigo-300 font-semibold">{profileMeta.goal}</span>
             </div>
           )}
         </div>
       </header>
 
-      {/* NO GOAL BANNER */}
-      {!userGoal && (
-        <div className="max-w-[1200px] mx-auto px-6 pt-8">
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 flex items-start gap-4">
-            <span className="text-2xl">⚡</span>
-            <div>
-              <p className="text-amber-300 font-bold text-sm">Complete your onboarding to unlock goal-specific resources</p>
-              <p className="text-amber-400/60 text-xs mt-1">Resources below are general. Finish onboarding to get materials tailored to your goal.</p>
+      {/* LOADING */}
+      {loading && (
+        <div className="min-h-[80vh] flex flex-col items-center justify-center gap-5">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <Loader2 size={32} className="text-indigo-400 animate-spin" />
             </div>
+          </div>
+          <div className="text-center">
+            <p className="text-white font-bold text-lg">AI is curating your materials...</p>
+            <p className="text-gray-400 text-sm mt-1">Generating personalized resources for {profileMeta.goal || 'your goal'}</p>
           </div>
         </div>
       )}
 
-      {/* CONTENT */}
-      <main className="max-w-[1200px] mx-auto px-6 py-10 mt-2">
-        <Section
-          title="Concept Learning"
-          reason={userGoal ? `Foundational resources for ${userGoal}` : 'Detailed lectures and foundational resources'}
-          icon={Video}
-          items={conceptItems}
-        />
-        <Section
-          title="Practice Resources 📝"
-          reason={userGoal ? `Real problems and tests for ${userGoal}` : 'Real problems and interactive sets'}
-          icon={Target}
-          items={practiceItems}
-        />
-        <Section
-          title="Revision Notes"
-          reason={userGoal ? `Quick references for ${userGoal}` : 'Cheat sheets and quick references'}
-          icon={BookOpen}
-          items={revisionItems}
-        />
-
-        {resources.length === 0 && (
-          <div className="text-center py-20 text-gray-500">
-            <p className="text-lg font-medium">No resources found</p>
-            <p className="text-sm mt-2">Try completing the onboarding with a specific goal.</p>
+      {/* ERROR */}
+      {!loading && error && (
+        <div className="max-w-[600px] mx-auto px-6 py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-6">
+            <AlertCircle size={32} className="text-red-400" />
           </div>
-        )}
-      </main>
+          <h2 className="text-xl font-bold text-white mb-2">Unable to load content</h2>
+          <p className="text-gray-400 text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all text-sm"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* CONTENT */}
+      {!loading && !error && content && (
+        <main className="max-w-[1200px] mx-auto px-6 py-10">
+
+          {/* Study Topics (AI explanations) */}
+          {content.studyTopics?.length > 0 && (
+            <Section title="AI Topic Explanations" subtitle={`Key concepts for ${profileMeta.goal}`} icon={Brain}>
+              <div className="space-y-3">
+                {content.studyTopics.map((topic, i) => (
+                  <TopicCard key={i} topic={topic} />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Concept Learning (videos) */}
+          {content.conceptLearning?.length > 0 && (
+            <Section title="Concept Learning" subtitle="Video lectures and foundational resources" icon={Video}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {content.conceptLearning.map((item, i) => (
+                  <ResourceCard key={i} item={item} />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Practice Resources */}
+          {content.practiceResources?.length > 0 && (
+            <Section title="Practice Resources 📝" subtitle="Problems, tests, and interactive exercises" icon={Target}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {content.practiceResources.map((item, i) => (
+                  <ResourceCard key={i} item={item} />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Revision Notes */}
+          {content.revisionNotes?.length > 0 && (
+            <Section title="Revision Notes" subtitle="Quick references and cheat sheets" icon={BookOpen}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {content.revisionNotes.map((item, i) => (
+                  <ResourceCard key={i} item={item} />
+                ))}
+              </div>
+            </Section>
+          )}
+        </main>
+      )}
     </div>
   );
 };

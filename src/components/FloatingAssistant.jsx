@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, X, Bot, Sparkles, MessageCircle } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const SUGGESTION_CHIPS = [
   { label: '🗺️ Help with roadmap', message: 'Can you help me plan my study roadmap for upcoming exams?' },
   { label: '🎓 Find scholarships', message: 'What are some scholarships available for Indian students in 2026?' },
@@ -89,7 +91,7 @@ const FloatingAssistant = ({ pageContext = 'home' }) => {
         historyForApi.pop();
       }
 
-      const res = await fetch('http://localhost:5000/api/v1/assistant/chat', {
+      const res = await fetch(`${API_URL}/api/v1/assistant/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

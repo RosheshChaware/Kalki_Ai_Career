@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Accordion = ({ title, icon: Icon, children, defaultOpen = false }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
@@ -49,7 +51,7 @@ const CareerPathView = ({ aiResult }) => {
     setLoading(true);
     setDetailData(null);
     try {
-      const res = await fetch('http://localhost:5000/api/v1/career/details', {
+      const res = await fetch(`${API_URL}/api/v1/career/details`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ career: careerName, userContext: aiResult })
@@ -152,7 +154,7 @@ const CareerPathView = ({ aiResult }) => {
           {loading ? (
             <p className="text-gray-400 flex flex-col items-center justify-center py-20 gap-4 animate-pulse bg-[#1C1C24] rounded-xl border border-[#ffffff05]">
               <Loader2 size={24} className="animate-spin text-indigo-400" /> 
-              <span>Analyzing industry data & generating detailed structure...</span>
+              <span>Analyzing industry data &amp; generating detailed structure...</span>
             </p>
           ) : detailData && (
             <div className="space-y-6">
@@ -302,7 +304,7 @@ const CareerPathView = ({ aiResult }) => {
                     <div className="space-y-5">
                       {rSorted?.vids?.length > 0 && (
                         <div>
-                          <p className="text-[11px] text-red-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><Video size={14}/> YouTube & Video Channels</p>
+                          <p className="text-[11px] text-red-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><Video size={14}/> YouTube &amp; Video Channels</p>
                           <ul className="space-y-2">
                             {rSorted.vids.map((v, i) => <li key={i} className="text-[13px] text-gray-300 flex items-start gap-2 bg-[#1C1C24] p-2 rounded-lg border border-red-500/10"><span className="text-red-400 mt-0.5">•</span><span>{v}</span></li>)}
                           </ul>
@@ -310,7 +312,7 @@ const CareerPathView = ({ aiResult }) => {
                       )}
                       {rSorted?.courses?.length > 0 && (
                         <div>
-                          <p className="text-[11px] text-blue-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><Library size={14}/> Top Courses & Certifications</p>
+                          <p className="text-[11px] text-blue-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><Library size={14}/> Top Courses &amp; Certifications</p>
                           <ul className="space-y-2">
                             {rSorted.courses.map((v, i) => <li key={i} className="text-[13px] text-gray-300 flex items-start gap-2 bg-[#1C1C24] p-2 rounded-lg border border-blue-500/10"><span className="text-blue-400 mt-0.5">•</span><span>{v}</span></li>)}
                           </ul>
@@ -318,7 +320,7 @@ const CareerPathView = ({ aiResult }) => {
                       )}
                       {rSorted?.books?.length > 0 && (
                         <div>
-                          <p className="text-[11px] text-green-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><BookText size={14}/> Books & Other Materials</p>
+                          <p className="text-[11px] text-green-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2"><BookText size={14}/> Books &amp; Other Materials</p>
                           <ul className="space-y-2">
                             {rSorted.books.map((v, i) => <li key={i} className="text-[13px] text-gray-300 flex items-start gap-2 bg-[#1C1C24] p-2 rounded-lg border border-green-500/10"><span className="text-green-400 mt-0.5">•</span><span>{v}</span></li>)}
                           </ul>
@@ -369,7 +371,7 @@ const CareerPathView = ({ aiResult }) => {
               </p>
 
               <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-indigo-400 pt-4 border-t border-[#ffffff0A]">
-                <span>View Details & Roadmap</span>
+                <span>View Details &amp; Roadmap</span>
                 <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>

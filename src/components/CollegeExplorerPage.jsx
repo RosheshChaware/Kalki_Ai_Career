@@ -84,7 +84,16 @@ const CollegeExplorerPage = ({ onClose }) => {
   return (
     <div className="min-h-screen bg-background text-white flex flex-col font-sans">
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-5 border-b border-white/5 bg-background sticky top-0 z-50">
+      <header
+        className="flex items-center justify-between px-8 py-5 sticky top-0 z-50"
+        style={{
+          background: 'rgba(8, 8, 12, 0.75)',
+          backdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(18px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.35)',
+        }}
+      >
         <div className="flex items-center gap-4">
           <button 
             onClick={onClose}

@@ -1,0 +1,15 @@
+23:36 [no-undef] 'process' is not defined.
+24:30 [no-undef] 'process' is not defined.
+25:36 [no-undef] 'process' is not defined.
+29:6 [no-undef] 'process' is not defined.
+31:3 [no-undef] 'process' is not defined.
+35:38 [no-undef] 'process' is not defined.
+52:11 [no-undef] 'process' is not defined.
+53:11 [no-undef] 'process' is not defined.
+85:13 [no-undef] 'process' is not defined.
+105:11 [no-unused-vars] 'info' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u.
+179:14 [no-unused-vars] 'parseError' is defined but never used.
+199:10 [no-undef] 'process' is not defined.
+303:10 [no-undef] 'process' is not defined.
+335:21 [no-unused-vars] 'userContext' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u.
+528:14 [no-undef] 'process' is not defined.

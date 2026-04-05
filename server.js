@@ -12,22 +12,22 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ── Load .env from root ──
+// ── Load .env from project root (default dotenv behavior) ──
 const envResult = dotenv.config();
 
 if (envResult.error) {
-  console.error(`[ENV] FAILED to load .env`);
+  console.error('[ENV] FAILED to load .env from project root.');
   console.error('[ENV] Error:', envResult.error.message);
 } else {
-  console.log(`[ENV] Loaded .env from root`);
-  console.log(`[ENV] GEMINI_API_KEY present: ${!!process.env.GEMINI_API_KEY}`);
+  console.log('[ENV] .env loaded successfully from project root.');
+  console.log('API KEY loaded:', !!process.env.GEMINI_API_KEY);
   console.log(`[ENV] PORT: ${process.env.PORT}`);
   console.log(`[ENV] EMAIL_USER: ${process.env.EMAIL_USER}`);
 }
 
 // ── Startup validation — crash early with a clear message ──
 if (!process.env.GEMINI_API_KEY) {
-  console.error('[FATAL] GEMINI_API_KEY is not set. Check root .env and restart the server.');
+  console.error('[FATAL] GEMINI_API_KEY is not set. Check the root .env file and restart the server.');
   process.exit(1);
 }
 
@@ -38,9 +38,29 @@ console.log('[Gemini] GoogleGenerativeAI client initialized successfully.');
 const app = express();
 
 // ── SECURITY MIDDLEWARE ──
-app.use(helmet()); 
-app.use(cors());
-app.use(express.json({ limit: '5mb' })); 
+// IMPORTANT: cors() MUST come before helmet() — helmet can strip CORS headers
+// on preflight (OPTIONS) requests if applied first.
+const allowedOrigins = [
+  'http://localhost:5173', // Vite dev server
+  'http://localhost:4173', // Vite preview
+  'http://localhost:3000', // fallback CRA / other
+  process.env.FRONTEND_URL, // production URL from .env
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. curl, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS policy: origin '${origin}' is not allowed.`));
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
+
+app.use(helmet());
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ limit: '5mb', extended: true }));
 
 // Rate Limiting temporarily removed for development phase
@@ -102,7 +122,7 @@ app.post('/api/v1/auth/send-login-alert', async (req, res) => {
       `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
     console.log('Login alert email sent successfully');
     res.status(200).json({ message: 'Login alert email sent' });
   } catch (error) {
@@ -126,9 +146,9 @@ app.post('/api/v1/analyze', async (req, res) => {
 
     // File Upload Security Check
     if (inputData.uploadedFileData) {
-        const allowedTypes = ['data:image/jpeg', 'data:image/png', 'data:image/jpg', 'data:application/pdf'];
-        const isValid = allowedTypes.some(type => inputData.uploadedFileData.startsWith(type));
-        if (!isValid) return res.status(400).json({ error: 'Invalid file format. Only JPG, PNG, and PDF are allowed.' });
+      const allowedTypes = ['data:image/jpeg', 'data:image/png', 'data:image/jpg', 'data:application/pdf'];
+      const isValid = allowedTypes.some(type => inputData.uploadedFileData.startsWith(type));
+      if (!isValid) return res.status(400).json({ error: 'Invalid file format. Only JPG, PNG, and PDF are allowed.' });
     }
 
     // NOTE: Cache intentionally disabled for /analyze — each request must produce fresh,
@@ -176,7 +196,7 @@ Output EXACT STRICT JSON ONLY with the following structure:
     let jsonOutput;
     try {
       jsonOutput = JSON.parse(rawText);
-    } catch (parseError) {
+    } catch (_parseError) {
       console.error('[/analyze] Gemini returned non-JSON response:', rawText.substring(0, 300));
       return res.status(500).json({ error: 'Gemini returned an unparseable response. Try again.' });
     }
@@ -288,7 +308,7 @@ app.post('/api/v1/roadmap/chat', async (req, res) => {
     const chat = model.startChat({ history: chatHistory });
     const contextPrefix = context ? `[USER CONTEXT FOCUS: ${context.focus}] ` : '';
     const result = await chat.sendMessage(contextPrefix + message);
-    
+
     res.status(200).json({ reply: result.response.text() });
   } catch (error) {
     console.error('Error in /api/v1/roadmap/chat:', error.message);
@@ -332,13 +352,13 @@ If the user context mentions a specific focus area, tailor your response to that
 
 app.post('/api/v1/career/details', async (req, res) => {
   try {
-    const { career, userContext } = sanitizeData(req.body);
+    const { career } = sanitizeData(req.body);
     if (!career) return res.status(400).json({ error: 'Career identifier is required' });
 
     const cacheKey = getCacheKey('career_details', career);
     if (apiCache.has(cacheKey)) {
-        console.log(`[Cache Hit] Returning cached career details for ${career} to avoid API limits.`);
-        return res.status(200).json(apiCache.get(cacheKey));
+      console.log(`[Cache Hit] Returning cached career details for ${career} to avoid API limits.`);
+      return res.status(200).json(apiCache.get(cacheKey));
     }
 
     const model = genAI.getGenerativeModel({
@@ -358,19 +378,170 @@ app.post('/api/v1/career/details', async (req, res) => {
   }
 });
 
-app.post('/api/gemini', async (req, res) => {
+
+// ── AI STUDY MATERIALS ──
+app.post('/api/v1/content/study-materials', async (req, res) => {
   try {
-    const { prompt } = sanitizeData(req.body);
-    if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
-    if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'System AI config is missing' });
+    const { goal, subjects, weakTopics, strongSubjects, currentClass } = sanitizeData(req.body);
+    if (!goal) return res.status(400).json({ error: 'goal is required' });
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const cacheKey = getCacheKey('study_materials', { goal, currentClass });
+    if (apiCache.has(cacheKey)) {
+      console.log(`[Cache Hit] study-materials for ${goal}`);
+      return res.status(200).json(apiCache.get(cacheKey));
+    }
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json' },
+    });
+
+    const prompt = `You are an expert Indian education resource curator. Generate personalized study materials for a student.
+
+STUDENT PROFILE:
+- Goal: ${goal}
+- Class/Year: ${currentClass || 'Not specified'}
+- Subjects: ${(subjects || []).join(', ') || 'Not specified'}
+- Weak topics: ${(weakTopics || []).join(', ') || 'None'}
+- Strong subjects: ${(strongSubjects || []).join(', ') || 'None'}
+
+Generate a JSON object. For URLs use ONLY real well-known educational URLs (YouTube channels, Khan Academy, NCERT, official exam sites, GeeksForGeeks, Vedantu, Unacademy). Never invent URLs.
+
+{
+  "conceptLearning": [
+    { "title": "", "description": "", "type": "Video", "url": "https://...", "subject": "", "difficulty": "Beginner|Intermediate|Advanced" }
+  ],
+  "practiceResources": [
+    { "title": "", "description": "", "type": "Article", "url": "https://...", "subject": "", "difficulty": "Beginner|Intermediate|Advanced" }
+  ],
+  "revisionNotes": [
+    { "title": "", "description": "", "type": "Article", "url": "https://...", "subject": "", "difficulty": "Beginner|Intermediate|Advanced" }
+  ],
+  "studyTopics": [
+    { "topic": "", "subject": "", "explanation": "", "keyPoints": ["", "", ""], "priority": "high|medium|low" }
+  ]
+}
+
+Rules:
+- conceptLearning: 4 items (YouTube channels: Khan Academy, Physics Wallah, 3Blue1Brown, Unacademy)
+- practiceResources: 4 items (IndiaBix, Testbook, PracticeMock, official exam practice portals)
+- revisionNotes: 3 items (ncert.nic.in, byju.com, vedantu.com)
+- studyTopics: 5 items focused on weak areas
+- ALL URLs must be real and verifiable. Output STRICT JSON ONLY.`;
+
     const result = await model.generateContent(prompt);
-
-    res.status(200).json({ reply: result.response.text() });
+    const output = JSON.parse(result.response.text());
+    apiCache.set(cacheKey, output);
+    console.log(`[/content/study-materials] Generated for: ${goal}`);
+    res.status(200).json(output);
   } catch (error) {
-    console.error('Error in /api/gemini:', error.message);
-    res.status(500).json({ error: 'Failed to process AI request.' });
+    console.error('[/content/study-materials] Error:', error.message);
+    res.status(500).json({ error: 'Failed to generate study materials. Please try again.' });
+  }
+});
+
+// ── AI QUIZ (MCQ) ──
+app.post('/api/v1/content/quiz', async (req, res) => {
+  try {
+    const { goal, weakSubject, subjects, currentClass } = sanitizeData(req.body);
+    if (!goal) return res.status(400).json({ error: 'goal is required' });
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json' },
+    });
+
+    const focusSubject = weakSubject || (subjects || [])[0] || 'General';
+
+    const prompt = `You are an expert exam question setter for Indian competitive and academic exams.
+
+Generate exactly 8 high-quality MCQ questions for:
+- Exam/Goal: ${goal}
+- Subject Focus: ${focusSubject}
+- Class/Year: ${currentClass || 'Not specified'}
+
+Requirements: exam-difficulty questions, 3 easy + 3 medium + 2 hard, 4 options each, one correct answer, brief explanation.
+
+Return STRICT JSON array ONLY:
+[
+  {
+    "text": "Full question text?",
+    "subject": "${focusSubject}",
+    "difficulty": "Easy|Medium|Hard",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct": 0,
+    "explanation": "Why this answer is correct"
+  }
+]
+
+Output JSON ONLY, no markdown.`;
+
+    const result = await model.generateContent(prompt);
+    const questions = JSON.parse(result.response.text());
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(500).json({ error: 'AI returned invalid quiz format.' });
+    }
+    console.log(`[/content/quiz] Generated ${questions.length} Qs for ${goal} - ${focusSubject}`);
+    res.status(200).json({ questions, subject: focusSubject });
+  } catch (error) {
+    console.error('[/content/quiz] Error:', error.message);
+    res.status(500).json({ error: 'Failed to generate quiz questions. Please try again.' });
+  }
+});
+
+// ── AI PYQ PRACTICE ──
+app.post('/api/v1/content/pyq', async (req, res) => {
+  try {
+    const { goal, subjects, weakTopics, currentClass } = sanitizeData(req.body);
+    if (!goal) return res.status(400).json({ error: 'goal is required' });
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json' },
+    });
+
+    const prompt = `You are an expert in Indian competitive exam previous year questions (PYQs).
+
+Generate 10 PYQ-style questions for:
+- Exam: ${goal}
+- Subjects: ${(subjects || []).join(', ') || 'General'}
+- Class/Year: ${currentClass || 'Not specified'}
+- Weak areas: ${(weakTopics || []).join(', ') || 'All topics'}
+
+Requirements: resemble actual PYQ pattern, 3 subjects minimum, 4 easy + 4 medium + 2 hard, include year hint.
+
+Also generate 5 real official PYQ paper links (official exam websites, byju.com, vedantu.com, cbseacademic.nic.in).
+
+Return STRICT JSON:
+{
+  "questions": [
+    {
+      "text": "Full question text?",
+      "subject": "Subject name",
+      "difficulty": "Easy|Medium|Hard",
+      "yearHint": "JEE Main 2022 style",
+      "options": ["A", "B", "C", "D"],
+      "correct": 0,
+      "explanation": "Why this is correct"
+    }
+  ],
+  "papers": [
+    { "title": "Paper title", "exam": "${goal}", "url": "https://verified-url.com" }
+  ]
+}
+
+Output STRICT JSON ONLY, no markdown.`;
+
+    const result = await model.generateContent(prompt);
+    const output = JSON.parse(result.response.text());
+    if (!output.questions || !Array.isArray(output.questions)) {
+      return res.status(500).json({ error: 'AI returned invalid PYQ format.' });
+    }
+    console.log(`[/content/pyq] Generated ${output.questions.length} PYQs for ${goal}`);
+    res.status(200).json(output);
+  } catch (error) {
+    console.error('[/content/pyq] Error:', error.message);
+    res.status(500).json({ error: 'Failed to generate PYQ practice. Please try again.' });
   }
 });
 

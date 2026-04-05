@@ -164,7 +164,16 @@ const CareerOutcomesPage = ({ onClose }) => {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans relative overflow-hidden">
       {/* Header Navigation */}
-      <header className="flex items-center gap-4 px-8 py-5 border-b border-white/5 bg-[#0a0a0a] sticky top-0 z-50">
+      <header
+        className="flex items-center gap-4 px-8 py-5 sticky top-0 z-50"
+        style={{
+          background: 'rgba(8, 8, 12, 0.75)',
+          backdropFilter: 'blur(18px)',
+          WebkitBackdropFilter: 'blur(18px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+          boxShadow: '0 4px 24px rgba(0, 0, 0, 0.35)',
+        }}
+      >
         <button 
           onClick={onClose}
           className="p-2 hover:bg-white/5 rounded-full transition-colors flex items-center gap-2"
