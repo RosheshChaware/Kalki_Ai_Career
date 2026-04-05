@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getUserData } from '../lib/firestoreService';
+
+const API_URL = import.meta.env.VITE_API_URL;
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { jsPDF } from 'jspdf';
 import { 
@@ -85,7 +87,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
 
         console.log('[Dashboard] Re-analyzing with saved user data:', inputData);
 
-        const res = await fetch('http://localhost:5000/api/v1/analyze', {
+        const res = await fetch(`${API_URL}/api/v1/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ inputData }),

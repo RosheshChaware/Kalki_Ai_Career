@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Accordion = ({ title, icon: Icon, children, defaultOpen = false }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
@@ -49,7 +51,7 @@ const CareerPathView = ({ aiResult }) => {
     setLoading(true);
     setDetailData(null);
     try {
-      const res = await fetch('http://localhost:5000/api/v1/career/details', {
+      const res = await fetch(`${API_URL}/api/v1/career/details`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ career: careerName, userContext: aiResult })

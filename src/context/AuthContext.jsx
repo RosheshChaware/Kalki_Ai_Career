@@ -10,6 +10,9 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 
+const API_URL = import.meta.env.VITE_API_URL;
+console.log('API URL:', API_URL);
+
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -37,7 +40,7 @@ export const AuthProvider = ({ children }) => {
   const sendLoginAlert = async (user) => {
     try {
       console.log('[Frontend] Initiating Login Alert for:', user.email);
-      const response = await fetch('http://localhost:5000/api/v1/auth/send-login-alert', {
+      const response = await fetch(`${API_URL}/api/v1/auth/send-login-alert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

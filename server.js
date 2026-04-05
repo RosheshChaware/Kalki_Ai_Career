@@ -12,25 +12,22 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ── Load .env from src/ (where the file actually lives) ──
-// dotenv.config() with no path defaults to <cwd>/.env which does NOT exist.
-// We explicitly point to src/.env to ensure all variables are loaded.
-const envPath = path.resolve(__dirname, 'src', '.env');
-const envResult = dotenv.config({ path: envPath });
+// ── Load .env from project root (default dotenv behavior) ──
+const envResult = dotenv.config();
 
 if (envResult.error) {
-  console.error(`[ENV] FAILED to load .env from: ${envPath}`);
+  console.error('[ENV] FAILED to load .env from project root.');
   console.error('[ENV] Error:', envResult.error.message);
 } else {
-  console.log(`[ENV] Loaded .env from: ${envPath}`);
-  console.log(`[ENV] GEMINI_API_KEY present: ${!!process.env.GEMINI_API_KEY}`);
+  console.log('[ENV] .env loaded successfully from project root.');
+  console.log('API KEY loaded:', !!process.env.GEMINI_API_KEY);
   console.log(`[ENV] PORT: ${process.env.PORT}`);
   console.log(`[ENV] EMAIL_USER: ${process.env.EMAIL_USER}`);
 }
 
 // ── Startup validation — crash early with a clear message ──
 if (!process.env.GEMINI_API_KEY) {
-  console.error('[FATAL] GEMINI_API_KEY is not set. Check src/.env and restart the server.');
+  console.error('[FATAL] GEMINI_API_KEY is not set. Check the root .env file and restart the server.');
   process.exit(1);
 }
 

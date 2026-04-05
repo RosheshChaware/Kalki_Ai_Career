@@ -3,6 +3,8 @@ import { saveOnboardingData } from '../lib/firestoreService';
 import { GraduationCap, Brain, Clock, BarChart2, Sparkles } from 'lucide-react';
 import { getGoalsForStream, getSubjectsForGoal } from '../data/goalIntelligence';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 // ─────────────────────────────────────────────────────────────
 //  Inline SVG Icons
 // ─────────────────────────────────────────────────────────────
@@ -501,7 +503,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail }) =>
       let res;
       let errBody = {};
       try {
-        res = await fetch('http://localhost:5000/api/v1/analyze', {
+        res = await fetch(`${API_URL}/api/v1/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ inputData: enrichedData }),
@@ -512,7 +514,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail }) =>
       } catch (networkErr) {
         console.error('[API] Network error — server may be offline:', networkErr.message);
         clearInterval(iv);
-        throw new Error('Cannot reach the AI server. Please ensure `npm run server` is running on port 5000.');
+        throw new Error(`Cannot reach the AI server. Please ensure \`npm run server\` is running on port ${API_URL}.`);
       }
 
       if (!res.ok) {
