@@ -1,6 +1,8 @@
 import React from 'react';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Lottie from 'lottie-react';
+import animationData from '../assets/chatbot-animation.json';
 
 const Hero = ({ onStartJourney }) => {
   const features = [
@@ -67,19 +69,92 @@ const Hero = ({ onStartJourney }) => {
           </div>
         </motion.div>
 
-        {/* RIGHT SECTION: Career Tree Image */}
-        <div className="relative flex items-center justify-center lg:h-[550px]">
-          <img
-            src="/images/career-tree.jpg"
-            alt="AI Career Tree - Interactive Learning Path Visualization"
-            className="w-full max-w-[560px] h-auto"
-            style={{ mixBlendMode: 'screen' }}
+        {/* RIGHT SECTION: Lottie AI Bot Animation */}
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.9, ease: "easeOut" }}
+          className="relative hidden lg:flex items-center justify-center lg:h-[550px]"
+        >
+          <div
+            className="absolute inset-0 rounded-full pointer-events-none"
+            style={{
+              background: 'radial-gradient(ellipse at center, rgba(99,102,241,0.18) 0%, rgba(139,92,246,0.10) 50%, transparent 75%)',
+              filter: 'blur(40px)',
+            }}
           />
-        </div>
+          <HeroLottie />
+        </motion.div>
 
       </div>
     </section>
   );
 };
+
+class LottieErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Lottie animation failed to load:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-[420px] max-w-full h-[420px] flex flex-col items-center justify-center text-white/40 border border-white/10 rounded-3xl bg-white/5 backdrop-blur-sm">
+          <div className="w-24 h-24 mb-4 rounded-full bg-white/10 flex items-center justify-center">
+            <span className="text-xs">Bot Offline</span>
+          </div>
+          <span className="text-sm font-medium">Animation Unavailable</span>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function HeroLottie() {
+  if (!Lottie || !animationData) {
+    return (
+      <div className="w-[420px] max-w-full h-[420px] flex items-center justify-center text-white/40 border-2 border-white/20 rounded-3xl bg-white/10">
+        <span className="text-lg font-medium text-white">Bot Data Missing</span>
+      </div>
+    );
+  }
+
+  // Properly handle Vite ESM to CJS interop for lottie-react
+  const LottieComponent = Lottie.default ? Lottie.default : Lottie;
+  const rawData = animationData.default ? animationData.default : animationData;
+
+  return (
+    <div
+      style={{
+        width: 420,
+        height: 420,
+        maxWidth: '100%',
+        filter: 'drop-shadow(0 0 32px rgba(99,102,241,0.45)) drop-shadow(0 0 10px rgba(139,92,246,0.3))',
+        position: 'relative',
+        zIndex: 20
+      }}
+    >
+      <LottieErrorBoundary>
+        <LottieComponent
+          animationData={rawData}
+          loop={true}
+          autoplay={true}
+          style={{ width: '100%', height: '100%' }}
+        />
+      </LottieErrorBoundary>
+    </div>
+  );
+}
 
 export default Hero;

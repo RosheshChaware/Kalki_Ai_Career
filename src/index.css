@@ -31,6 +31,32 @@
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
+
+  /* Global cursor behavior for interactive elements */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]):not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  summary,
+  /* Target common interactive classes broadly used for chips/cards */
+  .hover\:scale-105,
+  .hover\:scale-110,
+  .hover\:-translate-y-1,
+  .hover\:-translate-y-2 {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  button[disabled],
+  [aria-disabled="true"] {
+    cursor: not-allowed !important;
+  }
 }
 
 @utility glass-card {

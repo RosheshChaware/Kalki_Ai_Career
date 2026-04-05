@@ -3,7 +3,6 @@ import { ArrowLeft, BrainCircuit, CheckCircle2, XCircle, RefreshCw, Zap } from '
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { REAL_MCQS } from '../data/pyqData';
 
 const FALLBACK_QUESTIONS = REAL_MCQS.slice(0, 5); // Fallback if API fails
@@ -42,16 +41,21 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
         const targetGoal = userData?.inputData?.targetGoal || 'General';
 
         // Try to hit API
-        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (!apiKey) throw new Error("Missing API Key");
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
         const prompt = `Generate exactly 5 adaptive multiple-choice questions for a student preparing for ${targetGoal}, specifically focusing on their weak subject: ${targetSubject}. Return ONLY a valid, minified JSON array of objects. Format: [{"text": "Question text?", "options": ["A", "B", "C", "D"], "correct": 0}] where correct is the integer index (0-3). No markdown formatting or extra text.`;
 
-        const result = await model.generateContent(prompt);
-        let text = result.response.text().trim();
+        const response = await fetch("http://localhost:5000/api/gemini", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || "Backend API failed");
+        }
+
+        const dataJson = await response.json();
+        let text = dataJson.reply ? dataJson.reply.trim() : "";
         if (text.startsWith("```json")) {
            text = text.substring(7);
            if(text.endsWith("```")) text = text.substring(0, text.length - 3);

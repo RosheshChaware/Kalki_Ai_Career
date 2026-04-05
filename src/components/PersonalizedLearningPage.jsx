@@ -52,95 +52,99 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
   const [savedNotes, setSavedNotes] = useState([]);
   const [historyList, setHistoryList] = useState([]);
 
-  useEffect(() => {
-    if (freshResult || !user) return;
-    (async () => {
-      try {
-        const userData = await getUserData(user.uid);
-        if (!userData) {
-          onReanalyze?.();
-          return;
-        }
+  const handleUpdateData = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const userData = await getUserData(user.uid);
+      if (!userData) {
+        onReanalyze?.();
+        return;
+      }
 
-        // Build an enriched payload matching what OnboardingFlow sends
-        const inputData = {
-          currentClass: userData.class || '',
-          stream: userData.stream || '',
-          targetGoal: userData.goal || '',
-          language: userData.language || 'English',
-          strongSubjectsAll: userData.strongSubjects || [],
-          weakSubjectsAll: userData.weakSubjects || [],
-          weakTopicsAll: userData.weakTopics || [],
-          biggestChallenge: '',
-          confidence: '',
-          subjectEntries: (userData.scores || []).map(s => ({
-            subject: s.subject,
-            score: String(s.score),
-            correctQ: String(s.correctQs || ''),
-            incorrectQ: String(s.incorrectQs || ''),
-          })),
-          aiChat: userData.aiChat || {},
-          hasFileUpload: false,
-        };
+      // Build an enriched payload matching what OnboardingFlow sends
+      const inputData = {
+        currentClass: userData.class || '',
+        stream: userData.stream || '',
+        targetGoal: userData.goal || '',
+        language: userData.language || 'English',
+        strongSubjectsAll: userData.strongSubjects || [],
+        weakSubjectsAll: userData.weakSubjects || [],
+        weakTopicsAll: userData.weakTopics || [],
+        biggestChallenge: '',
+        confidence: '',
+        subjectEntries: (userData.scores || []).map(s => ({
+          subject: s.subject,
+          score: String(s.score),
+          correctQ: String(s.correctQs || ''),
+          incorrectQ: String(s.incorrectQs || ''),
+        })),
+        aiChat: userData.aiChat || {},
+        hasFileUpload: false,
+      };
 
-        console.log('[Dashboard] Re-analyzing with saved user data:', inputData);
+      console.log('[Dashboard] Re-analyzing with saved user data:', inputData);
 
-        const res = await fetch('http://localhost:5000/api/v1/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inputData }),
-        });
+      const res = await fetch('http://localhost:5000/api/v1/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputData }),
+      });
 
-        if (!res.ok) {
-          const errBody = await res.json().catch(() => ({}));
-          console.error('[Dashboard] /analyze failed:', errBody);
-          // Show partial data from Firestore without fake AI fields
-          const subjectScores = (userData.scores || []).map(s => ({ subject: s.subject, score: s.score }));
-          setData({
-            inputData: {
-              currentClass: userData.class || '',
-              stream: userData.stream || '',
-              targetGoal: userData.goal || '',
-              strongSubjects: userData.strongSubjects || [],
-              weakSubjects: userData.weakSubjects || [],
-            },
-            aiOutput: {
-              strongSubjects: (userData.strongSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
-              weakSubjects: (userData.weakSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
-              subjectScores,
-              learningProfile: {},
-              learningIssues: [],
-              recommendedFocus: [],
-              careerSuggestions: [],
-              insights: { overallAnalysis: 'AI analysis unavailable. Click "Update Data" to retry.' },
-            },
-            aiChat: userData.aiChat || null,
-          });
-          return;
-        }
-
-        const aiOutput = await res.json();
-        console.log('[Dashboard] AI re-analysis result:', aiOutput);
-
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error('[Dashboard] /analyze failed:', errBody);
+        // Show partial data from Firestore without fake AI fields
+        const subjectScores = (userData.scores || []).map(s => ({ subject: s.subject, score: s.score }));
         setData({
           inputData: {
             currentClass: userData.class || '',
             stream: userData.stream || '',
             targetGoal: userData.goal || '',
-            language: userData.language || '',
             strongSubjects: userData.strongSubjects || [],
             weakSubjects: userData.weakSubjects || [],
           },
-          aiOutput,
+          aiOutput: {
+            strongSubjects: (userData.strongSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
+            weakSubjects: (userData.weakSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
+            subjectScores,
+            learningProfile: {},
+            learningIssues: [],
+            recommendedFocus: [],
+            careerSuggestions: [],
+            insights: { overallAnalysis: `AI analysis unavailable. Google Gemini API returned an error (likely 429 Too Many Requests limit reached). Please wait a while and click "Update Data" to retry.` },
+          },
           aiChat: userData.aiChat || null,
         });
-      } catch (e) {
-        console.error('[Dashboard] Error fetching or re-analyzing:', e);
-      } finally {
-        setLoading(false);
+        return;
       }
-    })();
-  }, [user, freshResult, onReanalyze]);
+
+      const aiOutput = await res.json();
+      console.log('[Dashboard] AI re-analysis result:', aiOutput);
+
+      setData({
+        inputData: {
+          currentClass: userData.class || '',
+          stream: userData.stream || '',
+          targetGoal: userData.goal || '',
+          language: userData.language || '',
+          strongSubjects: userData.strongSubjects || [],
+          weakSubjects: userData.weakSubjects || [],
+        },
+        aiOutput,
+        aiChat: userData.aiChat || null,
+      });
+    } catch (e) {
+      console.error('[Dashboard] Error fetching or re-analyzing:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (freshResult) return;
+    handleUpdateData();
+  }, [user, freshResult]);
 
   // Load from LocalStorage on mount (notes only — NOT AI analysis)
   useEffect(() => {
@@ -464,7 +468,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Learning Pace</p>
-                    <p className="text-xl font-bold text-white capitalize">{ai.learningProfile?.consistencyLevel || 'Moderate'}</p>
+                    <p className="text-xl font-bold text-white capitalize">{ai.learningProfile?.consistencyLevel || 'Not Analyzed'}</p>
                   </div>
                 </div>
               </section>
@@ -474,7 +478,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                 <div className="bg-[#111116] rounded-2xl p-6 border border-[#ffffff0A]">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="font-bold text-white">Subject Performance</h2>
-                    <button onClick={onReanalyze} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">Update Data</button>
+                    <button onClick={handleUpdateData} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">Update Data</button>
                   </div>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">

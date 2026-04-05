@@ -12,17 +12,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ── Load .env from src/ (where the file actually lives) ──
-// dotenv.config() with no path defaults to <cwd>/.env which does NOT exist.
-// We explicitly point to src/.env to ensure all variables are loaded.
-const envPath = path.resolve(__dirname, 'src', '.env');
-const envResult = dotenv.config({ path: envPath });
+// ── Load .env from root ──
+const envResult = dotenv.config();
 
 if (envResult.error) {
-  console.error(`[ENV] FAILED to load .env from: ${envPath}`);
+  console.error(`[ENV] FAILED to load .env`);
   console.error('[ENV] Error:', envResult.error.message);
 } else {
-  console.log(`[ENV] Loaded .env from: ${envPath}`);
+  console.log(`[ENV] Loaded .env from root`);
   console.log(`[ENV] GEMINI_API_KEY present: ${!!process.env.GEMINI_API_KEY}`);
   console.log(`[ENV] PORT: ${process.env.PORT}`);
   console.log(`[ENV] EMAIL_USER: ${process.env.EMAIL_USER}`);
@@ -30,7 +27,7 @@ if (envResult.error) {
 
 // ── Startup validation — crash early with a clear message ──
 if (!process.env.GEMINI_API_KEY) {
-  console.error('[FATAL] GEMINI_API_KEY is not set. Check src/.env and restart the server.');
+  console.error('[FATAL] GEMINI_API_KEY is not set. Check root .env and restart the server.');
   process.exit(1);
 }
 
@@ -358,6 +355,22 @@ app.post('/api/v1/career/details', async (req, res) => {
   } catch (error) {
     console.error('Error in /api/v1/career/details:', error.message);
     res.status(500).json({ error: 'Failed to retrieve advanced career metrics.' });
+  }
+});
+
+app.post('/api/gemini', async (req, res) => {
+  try {
+    const { prompt } = sanitizeData(req.body);
+    if (!prompt) return res.status(400).json({ error: 'Prompt is required' });
+    if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'System AI config is missing' });
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const result = await model.generateContent(prompt);
+
+    res.status(200).json({ reply: result.response.text() });
+  } catch (error) {
+    console.error('Error in /api/gemini:', error.message);
+    res.status(500).json({ error: 'Failed to process AI request.' });
   }
 });
 
