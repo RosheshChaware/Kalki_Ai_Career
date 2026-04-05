@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, GraduationCap, Search, MapPin, MessageSquare, Filter } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Search, MapPin, Filter } from 'lucide-react';
 import MapComponent from './MapComponent';
 import CollegeDetailSidebar from './CollegeDetailSidebar';
 import { COLLEGES, FIELD_CATEGORIES, haversineDistance } from '../data/CollegeData';
@@ -202,10 +202,6 @@ const CollegeExplorerPage = ({ onClose }) => {
           </div>
         </div>
 
-        {/* Floating Action Button */}
-        <button className="fixed bottom-8 right-8 w-14 h-14 bg-primary hover:bg-primary/90 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all z-[1000]">
-           <MessageSquare className="w-6 h-6 fill-current" />
-        </button>
       </main>
     </div>
   );

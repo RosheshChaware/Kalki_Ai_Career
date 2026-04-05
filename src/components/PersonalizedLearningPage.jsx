@@ -34,11 +34,16 @@ import CareerPathView from './CareerPathView';
 import SettingsView from './SettingsView';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981'];
-const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, onOpenPracticeQuestions, onOpenCareerDetails, aiResult: freshResult }) => {
+const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, onOpenPracticeQuestions, onOpenCareerDetails, onMenuChange, aiResult: freshResult }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(!freshResult);
   const [data, setData] = useState(freshResult || null);
   const [activeMenu, setActiveMenu] = useState('Dashboard');
+  
+  // Track active menu change for parent's assistant visibility control
+  useEffect(() => {
+    onMenuChange?.(activeMenu);
+  }, [activeMenu, onMenuChange]);
 
   // Quick Actions State
   const [actionsOpen, setActionsOpen] = useState(false);

@@ -182,16 +182,32 @@ const ScholarshipsPage = ({ onClose }) => {
 
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          {/* Header */}
-          <button 
-            onClick={() => setSelectedScholarship(null)}
-            className="flex items-center gap-2 text-textMuted hover:text-white transition-colors mb-8"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Scholarships</span>
-          </button>
+        {/* Sticky Navbar */}
+        <div className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/40 backdrop-blur-md shadow-lg shadow-black/20">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <button 
+              onClick={() => setSelectedScholarship(null)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors shadow-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Back to Scholarships</span>
+            </button>
+            <div className="flex items-center gap-3 text-sm font-medium">
+              <div className="bg-white/5 border border-white/10 px-5 py-2.5 rounded-full flex items-center gap-2 transition-colors cursor-default shadow-sm">
+                <Heart className="w-4 h-4 text-red-400" />
+                <span className="text-white hidden sm:inline">Saved ({savedIds.size})</span>
+                <span className="text-white sm:hidden">{savedIds.size}</span>
+              </div>
+              <div className="bg-white/5 border border-white/10 px-5 py-2.5 rounded-full flex items-center gap-2 transition-colors cursor-default shadow-sm">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <span className="text-white hidden sm:inline">Applied ({appliedIds.size})</span>
+                <span className="text-white sm:hidden">{appliedIds.size}</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
+        <div className="max-w-7xl mx-auto px-6 py-12">
           {/* Details Hero Section */}
           <div className="glass-card rounded-3xl p-8 mb-8 border border-white/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8">
@@ -341,29 +357,33 @@ const ScholarshipsPage = ({ onClose }) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col">
-        {/* Navigation & Header Space */}
-        <div className="flex justify-between items-center mb-8">
+      {/* Sticky Navbar */}
+      <div className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/40 backdrop-blur-md shadow-lg shadow-black/20">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <button 
             onClick={onClose}
-            className="flex items-center gap-2 text-textMuted hover:text-white transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors shadow-sm"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Dashboard</span>
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Back to Dashboard</span>
           </button>
           
-          <div className="flex items-center gap-4 text-sm font-medium text-textMuted">
-            <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-xl flex items-center gap-2">
+          <div className="flex items-center gap-3 text-sm font-medium">
+            <div className="bg-white/5 border border-white/10 px-5 py-2.5 rounded-full flex items-center gap-2 transition-colors cursor-default shadow-sm">
               <Heart className="w-4 h-4 text-red-400" />
-              <span className="text-white">{savedIds.size} Saved</span>
+              <span className="text-white hidden sm:inline">Saved ({savedIds.size})</span>
+              <span className="text-white sm:hidden">{savedIds.size}</span>
             </div>
-            <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-xl flex items-center gap-2">
+            <div className="bg-white/5 border border-white/10 px-5 py-2.5 rounded-full flex items-center gap-2 transition-colors cursor-default shadow-sm">
               <CheckCircle className="w-4 h-4 text-green-400" />
-              <span className="text-white">{appliedIds.size} Applied</span>
+              <span className="text-white hidden sm:inline">Applied ({appliedIds.size})</span>
+              <span className="text-white sm:hidden">{appliedIds.size}</span>
             </div>
           </div>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col">
         <div className="text-center mb-16">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 border border-primary/20">
             <GraduationCap className="text-primary w-8 h-8" />

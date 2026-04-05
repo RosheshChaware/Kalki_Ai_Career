@@ -18,6 +18,7 @@ import PyqPracticePage from './components/PyqPracticePage';
 import AdaptiveQuizPage from './components/AdaptiveQuizPage';
 import PixelSpotlightBackground from './components/backgrounds/PixelSpotlightBackground';
 import ScholarshipsPage from './components/ScholarshipsPage';
+import FloatingAssistant from './components/FloatingAssistant';
 
 function App() {
   const { user } = useAuth();
@@ -35,7 +36,8 @@ function App() {
   const [showAuth, setShowAuth] = useState(false);
   const [showScholarships, setShowScholarships] = useState(false);
   const [authMode, setAuthMode] = useState('signin');
-  const [aiResult, setAiResult] = useState(null); // holds fresh AI result after analysis
+  const [aiResult, setAiResult] = useState(null);
+  const [currentSubPage, setCurrentSubPage] = useState('Dashboard');
 
   const openAuth = (mode = 'signin') => {
     setAuthMode(mode);
@@ -44,7 +46,6 @@ function App() {
 
   const closeAuth = () => setShowAuth(false);
 
-  // If user clicks "Start Assessment", require login first
   const openAssessment = () => {
     if (user) {
       setShowAssessment(true);
@@ -86,6 +87,7 @@ function App() {
       const done = localStorage.getItem(`onboarding_complete_${user.uid}`);
       if (done) {
         setShowLearningPage(true);
+        setCurrentSubPage('Dashboard');
       } else {
         setShowOnboarding(true);
       }
@@ -96,7 +98,6 @@ function App() {
   };
   const closeLearningPage = () => setShowLearningPage(false);
 
-  // After successful login, redirect to pending page
   useEffect(() => {
     if (user && pendingRedirect.current === 'learning') {
       pendingRedirect.current = null;
@@ -104,13 +105,20 @@ function App() {
       const done = localStorage.getItem(`onboarding_complete_${user.uid}`);
       if (done) {
         setShowLearningPage(true);
+        setCurrentSubPage('Dashboard');
       } else {
         setShowOnboarding(true);
       }
     }
   }, [user]);
 
-  // On sign-out, clear all dashboard/onboarding state
+  // On sub-page or main view change, Reset sub-page defaults
+  useEffect(() => {
+    if (!showLearningPage) {
+        setCurrentSubPage('Dashboard');
+    }
+  }, [showLearningPage]);
+
   useEffect(() => {
     if (!user) {
       setShowLearningPage(false);
@@ -119,45 +127,50 @@ function App() {
     }
   }, [user]);
 
+  // ── Page renders with FloatingAssistant on all pages EXCEPT the Learning/Roadmap page ──
+
   if (showAssessment) {
-    return <SubjectAdvisorPage onClose={closeAssessment} />;
+    return <><SubjectAdvisorPage onClose={closeAssessment} /><FloatingAssistant pageContext="roadmap" /></>;
   }
 
   if (showCollegeExplorer) {
-    return <CollegeExplorerPage onClose={closeCollegeExplorer} />;
+    return <><CollegeExplorerPage onClose={closeCollegeExplorer} /><FloatingAssistant pageContext="career" /></>;
   }
 
   if (showCareerOutcomes) {
-    return <CareerOutcomesPage onClose={closeCareerOutcomes} />;
+    return <><CareerOutcomesPage onClose={closeCareerOutcomes} /><FloatingAssistant pageContext="career" /></>;
   }
 
   if (showScholarships) {
-    return <ScholarshipsPage onClose={closeScholarships} />;
+    return <><ScholarshipsPage onClose={closeScholarships} /><FloatingAssistant pageContext="scholarships" /></>;
   }
 
   if (showCareerDetails) {
-    return <CareerDetailsPage onClose={closeCareerDetails} />;
+    return <><CareerDetailsPage onClose={closeCareerDetails} /><FloatingAssistant pageContext="career" /></>;
   }
 
   if (showStudyMaterials) {
-    return <StudyMaterialsPage onClose={closeStudyMaterials} aiResult={aiResult} />;
+    return <><StudyMaterialsPage onClose={closeStudyMaterials} aiResult={aiResult} /><FloatingAssistant pageContext="study" /></>;
   }
 
   if (showPyq) {
-    return <PyqPracticePage onClose={closePyq} aiResult={aiResult} />;
+    return <><PyqPracticePage onClose={closePyq} aiResult={aiResult} /><FloatingAssistant pageContext="quiz" /></>;
   }
 
   if (showQuiz) {
-    return <AdaptiveQuizPage onClose={closeQuiz} aiResult={aiResult} />;
+    return <><AdaptiveQuizPage onClose={closeQuiz} aiResult={aiResult} /><FloatingAssistant pageContext="quiz" /></>;
   }
 
   if (showPracticeQuestions) {
     return (
-      <PracticeQuestionsPage 
-        onClose={closePracticeQuestions} 
-        onOpenPyq={openPyq} 
-        onOpenQuiz={openQuiz}
-      />
+      <>
+        <PracticeQuestionsPage 
+          onClose={closePracticeQuestions} 
+          onOpenPyq={openPyq} 
+          onOpenQuiz={openQuiz}
+        />
+        <FloatingAssistant pageContext="quiz" />
+      </>
     );
   }
 
@@ -166,7 +179,7 @@ function App() {
       <OnboardingFlow
         userId={user?.uid}
         onComplete={(payload) => {
-          setAiResult(payload);        // store fresh AI result in memory
+          setAiResult(payload);
           setShowOnboarding(false);
           setShowLearningPage(true);
         }}
@@ -176,19 +189,28 @@ function App() {
   }
 
   if (showLearningPage) {
-    return <PersonalizedLearningPage
-      aiResult={aiResult}          // pass fresh result or null for returning users
-      onClose={closeLearningPage}
-      onOpenStudyMaterials={openStudyMaterials}
-      onOpenPracticeQuestions={openPracticeQuestions}
-      onOpenCareerDetails={openCareerDetails}
-      onReanalyze={() => {
-        if (user) localStorage.removeItem(`onboarding_complete_${user.uid}`);
-        setAiResult(null);          // clear cached result so dashboard re-fetches
-        setShowLearningPage(false);
-        setShowOnboarding(true);
-      }}
-    />;
+    return (
+      <>
+        <PersonalizedLearningPage
+          aiResult={aiResult}
+          onClose={closeLearningPage}
+          onOpenStudyMaterials={openStudyMaterials}
+          onOpenPracticeQuestions={openPracticeQuestions}
+          onOpenCareerDetails={openCareerDetails}
+          onReanalyze={() => {
+            if (user) localStorage.removeItem(`onboarding_complete_${user.uid}`);
+            setAiResult(null);
+            setShowLearningPage(false);
+            setShowOnboarding(true);
+          }}
+          onMenuChange={setCurrentSubPage}
+        />
+        {/* Hide assistant only when internally showing the Roadmap (which has the ShikshaSetu Tutor) */}
+        {currentSubPage !== 'Roadmap' && (
+            <FloatingAssistant pageContext={currentSubPage === 'Dashboard' ? 'dashboard' : 'career'} />
+        )}
+      </>
+    );
   }
 
   return (
@@ -206,7 +228,11 @@ function App() {
         />
         <Hero onStartJourney={openLearningPage} />
         
-        <FeatureCards onStartAssessment={openAssessment} />
+        <FeatureCards 
+           onStartAssessment={openAssessment} 
+           onOpenLearningPage={openLearningPage}
+           onOpenScholarships={openScholarships}
+        />
         <Statistics />
         <Tools 
           onOpenExplorer={openCollegeExplorer} 
@@ -226,6 +252,7 @@ function App() {
           />
         )}
       </div>
+      <FloatingAssistant pageContext="home" />
     </div>
   );
 }

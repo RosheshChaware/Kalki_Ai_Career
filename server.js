@@ -257,6 +257,40 @@ app.post('/api/v1/roadmap/chat', async (req, res) => {
   }
 });
 
+app.post('/api/v1/assistant/chat', async (req, res) => {
+  try {
+    const { message, context, history } = sanitizeData(req.body);
+    if (!message) return res.status(400).json({ error: 'Message cannot be empty.' });
+    if (!process.env.GEMINI_API_KEY) return res.status(500).json({ error: 'System AI config is missing' });
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction: `You are Smart AI Assistant — a friendly, knowledgeable AI mentor built into a career guidance platform for Indian students (classes 10-12 and college). 
+You help with: academic guidance, career planning, scholarship discovery, study strategies, exam preparation (JEE, NEET, boards), college selection, and learning roadmaps.
+Keep answers concise (2-4 paragraphs max), actionable, and student-friendly. Use bullet points for lists.
+Be encouraging and supportive. Always consider the Indian education context.
+If the user context mentions a specific focus area, tailor your response to that domain.`,
+    });
+
+    let chatHistory = (history || []).map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
+    // Gemini requires alternating roles starting with user
+    while (chatHistory.length > 0 && chatHistory[0].role === 'model') chatHistory.shift();
+    if (chatHistory.length > 0 && chatHistory[chatHistory.length - 1].role === 'user') chatHistory.pop();
+
+    const chat = model.startChat({ history: chatHistory });
+    const contextPrefix = context?.focus ? `[CONTEXT: ${context.focus}] ` : '';
+    const result = await chat.sendMessage(contextPrefix + message);
+
+    res.status(200).json({ reply: result.response.text() });
+  } catch (error) {
+    console.error('Error in /api/v1/assistant/chat:', error.message);
+    res.status(500).json({ error: 'Failed to get a response from the AI assistant.' });
+  }
+});
+
 app.post('/api/v1/career/details', async (req, res) => {
   try {
     const { career, userContext } = sanitizeData(req.body);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Briefcase, UserCircle, DollarSign } from 'lucide-react';
 
-const FeatureCards = ({ onStartAssessment }) => {
+const FeatureCards = ({ onStartAssessment, onOpenLearningPage, onOpenScholarships }) => {
   const features = [
     {
       icon: <Briefcase className="w-6 h-6 text-primary" />,
@@ -14,13 +14,15 @@ const FeatureCards = ({ onStartAssessment }) => {
       icon: <UserCircle className="w-6 h-6 text-primary" />,
       title: "Personal Dashboard",
       description: "Track your progress, manage preferences, and get personalized recommendations for your journey.",
-      buttonText: "View Profile"
+      buttonText: "View Profile",
+      onClick: onOpenLearningPage
     },
     {
       icon: <DollarSign className="w-6 h-6 text-primary" />,
       title: "Scholarship Portal",
       description: "Discover scholarships and financial aid opportunities to support your educational journey.",
-      buttonText: "Find Scholarships"
+      buttonText: "Find Scholarships",
+      onClick: onOpenScholarships
     }
   ];
 
