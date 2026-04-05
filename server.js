@@ -358,6 +358,173 @@ app.post('/api/v1/career/details', async (req, res) => {
   }
 });
 
+
+// ── AI STUDY MATERIALS ──
+app.post('/api/v1/content/study-materials', async (req, res) => {
+  try {
+    const { goal, subjects, weakTopics, strongSubjects, currentClass } = sanitizeData(req.body);
+    if (!goal) return res.status(400).json({ error: 'goal is required' });
+
+    const cacheKey = getCacheKey('study_materials', { goal, currentClass });
+    if (apiCache.has(cacheKey)) {
+      console.log(`[Cache Hit] study-materials for ${goal}`);
+      return res.status(200).json(apiCache.get(cacheKey));
+    }
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json' },
+    });
+
+    const prompt = `You are an expert Indian education resource curator. Generate personalized study materials for a student.
+
+STUDENT PROFILE:
+- Goal: ${goal}
+- Class/Year: ${currentClass || 'Not specified'}
+- Subjects: ${(subjects || []).join(', ') || 'Not specified'}
+- Weak topics: ${(weakTopics || []).join(', ') || 'None'}
+- Strong subjects: ${(strongSubjects || []).join(', ') || 'None'}
+
+Generate a JSON object. For URLs use ONLY real well-known educational URLs (YouTube channels, Khan Academy, NCERT, official exam sites, GeeksForGeeks, Vedantu, Unacademy). Never invent URLs.
+
+{
+  "conceptLearning": [
+    { "title": "", "description": "", "type": "Video", "url": "https://...", "subject": "", "difficulty": "Beginner|Intermediate|Advanced" }
+  ],
+  "practiceResources": [
+    { "title": "", "description": "", "type": "Article", "url": "https://...", "subject": "", "difficulty": "Beginner|Intermediate|Advanced" }
+  ],
+  "revisionNotes": [
+    { "title": "", "description": "", "type": "Article", "url": "https://...", "subject": "", "difficulty": "Beginner|Intermediate|Advanced" }
+  ],
+  "studyTopics": [
+    { "topic": "", "subject": "", "explanation": "", "keyPoints": ["", "", ""], "priority": "high|medium|low" }
+  ]
+}
+
+Rules:
+- conceptLearning: 4 items (YouTube channels: Khan Academy, Physics Wallah, 3Blue1Brown, Unacademy)
+- practiceResources: 4 items (IndiaBix, Testbook, PracticeMock, official exam practice portals)
+- revisionNotes: 3 items (ncert.nic.in, byju.com, vedantu.com)
+- studyTopics: 5 items focused on weak areas
+- ALL URLs must be real and verifiable. Output STRICT JSON ONLY.`;
+
+    const result = await model.generateContent(prompt);
+    const output = JSON.parse(result.response.text());
+    apiCache.set(cacheKey, output);
+    console.log(`[/content/study-materials] Generated for: ${goal}`);
+    res.status(200).json(output);
+  } catch (error) {
+    console.error('[/content/study-materials] Error:', error.message);
+    res.status(500).json({ error: 'Failed to generate study materials. Please try again.' });
+  }
+});
+
+// ── AI QUIZ (MCQ) ──
+app.post('/api/v1/content/quiz', async (req, res) => {
+  try {
+    const { goal, weakSubject, subjects, currentClass } = sanitizeData(req.body);
+    if (!goal) return res.status(400).json({ error: 'goal is required' });
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json' },
+    });
+
+    const focusSubject = weakSubject || (subjects || [])[0] || 'General';
+
+    const prompt = `You are an expert exam question setter for Indian competitive and academic exams.
+
+Generate exactly 8 high-quality MCQ questions for:
+- Exam/Goal: ${goal}
+- Subject Focus: ${focusSubject}
+- Class/Year: ${currentClass || 'Not specified'}
+
+Requirements: exam-difficulty questions, 3 easy + 3 medium + 2 hard, 4 options each, one correct answer, brief explanation.
+
+Return STRICT JSON array ONLY:
+[
+  {
+    "text": "Full question text?",
+    "subject": "${focusSubject}",
+    "difficulty": "Easy|Medium|Hard",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct": 0,
+    "explanation": "Why this answer is correct"
+  }
+]
+
+Output JSON ONLY, no markdown.`;
+
+    const result = await model.generateContent(prompt);
+    const questions = JSON.parse(result.response.text());
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(500).json({ error: 'AI returned invalid quiz format.' });
+    }
+    console.log(`[/content/quiz] Generated ${questions.length} Qs for ${goal} - ${focusSubject}`);
+    res.status(200).json({ questions, subject: focusSubject });
+  } catch (error) {
+    console.error('[/content/quiz] Error:', error.message);
+    res.status(500).json({ error: 'Failed to generate quiz questions. Please try again.' });
+  }
+});
+
+// ── AI PYQ PRACTICE ──
+app.post('/api/v1/content/pyq', async (req, res) => {
+  try {
+    const { goal, subjects, weakTopics, currentClass } = sanitizeData(req.body);
+    if (!goal) return res.status(400).json({ error: 'goal is required' });
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: { responseMimeType: 'application/json' },
+    });
+
+    const prompt = `You are an expert in Indian competitive exam previous year questions (PYQs).
+
+Generate 10 PYQ-style questions for:
+- Exam: ${goal}
+- Subjects: ${(subjects || []).join(', ') || 'General'}
+- Class/Year: ${currentClass || 'Not specified'}
+- Weak areas: ${(weakTopics || []).join(', ') || 'All topics'}
+
+Requirements: resemble actual PYQ pattern, 3 subjects minimum, 4 easy + 4 medium + 2 hard, include year hint.
+
+Also generate 5 real official PYQ paper links (official exam websites, byju.com, vedantu.com, cbseacademic.nic.in).
+
+Return STRICT JSON:
+{
+  "questions": [
+    {
+      "text": "Full question text?",
+      "subject": "Subject name",
+      "difficulty": "Easy|Medium|Hard",
+      "yearHint": "JEE Main 2022 style",
+      "options": ["A", "B", "C", "D"],
+      "correct": 0,
+      "explanation": "Why this is correct"
+    }
+  ],
+  "papers": [
+    { "title": "Paper title", "exam": "${goal}", "url": "https://verified-url.com" }
+  ]
+}
+
+Output STRICT JSON ONLY, no markdown.`;
+
+    const result = await model.generateContent(prompt);
+    const output = JSON.parse(result.response.text());
+    if (!output.questions || !Array.isArray(output.questions)) {
+      return res.status(500).json({ error: 'AI returned invalid PYQ format.' });
+    }
+    console.log(`[/content/pyq] Generated ${output.questions.length} PYQs for ${goal}`);
+    res.status(200).json(output);
+  } catch (error) {
+    console.error('[/content/pyq] Error:', error.message);
+    res.status(500).json({ error: 'Failed to generate PYQ practice. Please try again.' });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Secure V1 Server is actively running on port ${PORT}`);

@@ -19,6 +19,7 @@ import AdaptiveQuizPage from './components/AdaptiveQuizPage';
 import PixelSpotlightBackground from './components/backgrounds/PixelSpotlightBackground';
 import ScholarshipsPage from './components/ScholarshipsPage';
 import FloatingAssistant from './components/FloatingAssistant';
+import Footer from './components/Footer';
 import { checkUserExists } from './lib/firestoreService';
 
 function App() {
@@ -264,6 +265,9 @@ function App() {
             onClose={closeAuth}
           />
         )}
+
+        {/* Footer */}
+        <Footer />
       </div>
       <FloatingAssistant pageContext="home" />
     </div>
