@@ -17,6 +17,7 @@ import PracticeQuestionsPage from './components/PracticeQuestionsPage';
 import PyqPracticePage from './components/PyqPracticePage';
 import AdaptiveQuizPage from './components/AdaptiveQuizPage';
 import PixelSpotlightBackground from './components/backgrounds/PixelSpotlightBackground';
+import ScholarshipsPage from './components/ScholarshipsPage';
 
 function App() {
   const { user } = useAuth();
@@ -32,6 +33,7 @@ function App() {
   const [showQuiz, setShowQuiz] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showScholarships, setShowScholarships] = useState(false);
   const [authMode, setAuthMode] = useState('signin');
   const [aiResult, setAiResult] = useState(null); // holds fresh AI result after analysis
 
@@ -58,6 +60,9 @@ function App() {
 
   const openCareerOutcomes = () => setShowCareerOutcomes(true);
   const closeCareerOutcomes = () => setShowCareerOutcomes(false);
+
+  const openScholarships = () => setShowScholarships(true);
+  const closeScholarships = () => setShowScholarships(false);
 
   const openCareerDetails = () => setShowCareerDetails(true);
   const closeCareerDetails = () => setShowCareerDetails(false);
@@ -126,6 +131,10 @@ function App() {
     return <CareerOutcomesPage onClose={closeCareerOutcomes} />;
   }
 
+  if (showScholarships) {
+    return <ScholarshipsPage onClose={closeScholarships} />;
+  }
+
   if (showCareerDetails) {
     return <CareerDetailsPage onClose={closeCareerDetails} />;
   }
@@ -191,6 +200,7 @@ function App() {
           onOpenExplorer={openCollegeExplorer}
           onOpenCareerOutcomes={openCareerOutcomes}
           onOpenLearningPage={openLearningPage}
+          onOpenScholarships={openScholarships}
           onOpenSignIn={() => openAuth('signin')}
           onOpenSignUp={() => openAuth('signup')}
         />
