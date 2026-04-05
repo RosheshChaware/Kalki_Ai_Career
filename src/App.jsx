@@ -214,7 +214,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-black">
+    <div className="min-h-screen w-full relative overflow-hidden bg-background">
       <PixelSpotlightBackground />
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar

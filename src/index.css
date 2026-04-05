@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0a0a0a;
+  --color-background: #050505;
   --color-surface: #111111;
   --color-primary: #6366f1;
   --color-secondary: #1e1e24;
@@ -13,12 +13,23 @@
 @layer base {
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    background-color: #0a0a0a;
+    background-color: #050505;
     color: #ffffff;
     font-family: "Inter", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Shimmer gradient animation for CTA buttons */
+  @keyframes shimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 }
 
