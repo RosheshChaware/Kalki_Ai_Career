@@ -409,9 +409,9 @@ const Footer = () => {
                 {t('footer.description')}
               </p>
               <div className="ss-social-row">
-                <SocialButton href="mailto:support@shikhasetu.ai"          label="Email"    icon={<MailIcon />} />
-                <SocialButton href="https://github.com/shikhasetu"         label="GitHub"   icon={<GitHubIcon />} />
-                <SocialButton href="https://linkedin.com/in/shikhasetu"    label="LinkedIn" icon={<LinkedInIcon />} />
+                <SocialButton href="mailto:support@eduveda.ai"          label="Email"    icon={<MailIcon />} />
+                <SocialButton href="https://github.com/eduveda"         label="GitHub"   icon={<GitHubIcon />} />
+                <SocialButton href="https://linkedin.com/in/eduveda"    label="LinkedIn" icon={<LinkedInIcon />} />
               </div>
             </div>
 
