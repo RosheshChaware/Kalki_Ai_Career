@@ -226,7 +226,7 @@ function App() {
           }}
           onMenuChange={setCurrentSubPage}
         />
-        {/* Hide assistant only when internally showing the Roadmap (which has the ShikshaSetu Tutor) */}
+        {/* Hide assistant only when internally showing the Roadmap (which has the EduVeda Tutor) */}
         {currentSubPage !== 'Roadmap' && (
             <FloatingAssistant pageContext={currentSubPage === 'Dashboard' ? 'dashboard' : 'career'} />
         )}

@@ -400,7 +400,7 @@ const Footer = () => {
                 <span className="ss-brand-logo-icon">
                   <BoltIcon />
                 </span>
-                <span className="ss-brand-logo-text">ShikshaSetu</span>
+                <span className="ss-brand-logo-text">EduVeda</span>
               </a>
               <p className="ss-brand-tagline">AI-powered career guidance for students</p>
               <p className="ss-brand-description">
@@ -450,7 +450,7 @@ const Footer = () => {
         {/* ── Bottom Bar ────────────────────────────────────────── */}
         <div className="ss-footer-bottom">
           <span className="ss-copyright">
-            © {currentYear} ShikshaSetu. All rights reserved.
+            © {currentYear} EduVeda. All rights reserved.
           </span>
           <span className="ss-made-with">Made with ❤️ for India's students</span>
         </div>

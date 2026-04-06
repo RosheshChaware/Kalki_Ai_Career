@@ -103,7 +103,7 @@ const CollegeExplorerPage = ({ onClose }) => {
           </button>
           <div className="flex items-center gap-2">
             <GraduationCap className="text-primary w-6 h-6" />
-            <span className="text-xl font-semibold tracking-tight">ShikshaSetu</span>
+            <span className="text-xl font-semibold tracking-tight">EduVeda</span>
           </div>
         </div>
       </header>

@@ -355,7 +355,7 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
             <MessageSquare size={18} />
           </div>
           <div>
-            <h2 className="text-white font-bold text-sm">ShikshaSetu Tutor</h2>
+            <h2 className="text-white font-bold text-sm">EduVeda Tutor</h2>
             <p className="text-[11px] text-green-400 flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" /> Online &amp; Context Aware</p>
           </div>
         </div>

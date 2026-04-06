@@ -200,7 +200,7 @@ const VerificationScreen = ({ email, password, onVerified, onBack }) => {
       {/* Steps */}
       <div className="w-full text-left space-y-3 bg-white/3 rounded-2xl p-5 border border-white/5">
         {[
-          { step: '1', text: 'Open the email from CareerPath' },
+          { step: '1', text: 'Open the email from EduVeda' },
           { step: '2', text: 'Click the "Verify email address" button' },
           { step: '3', text: 'Come back here and click the button below' },
         ].map(({ step, text }) => (
@@ -495,7 +495,7 @@ const BrandPanel = ({ mode }) => (
 
     <div className="relative z-10 flex items-center gap-2">
       <GraduationCap className="text-primary w-7 h-7" />
-      <span className="text-2xl font-bold tracking-tight">CareerPath</span>
+      <span className="text-2xl font-bold tracking-tight">EduVeda</span>
     </div>
 
     <div className="relative z-10">
@@ -520,7 +520,7 @@ const BrandPanel = ({ mode }) => (
         ))}
       </ul>
     </div>
-    <p className="relative z-10 text-xs text-textMuted">© 2026 CareerPath. All rights reserved.</p>
+    <p className="relative z-10 text-xs text-textMuted">© 2026 EduVeda. All rights reserved.</p>
   </div>
 );
 
@@ -551,7 +551,7 @@ const AuthPage = ({ defaultMode = 'signin', onSuccess, onClose }) => {
           <div className="flex items-center justify-between mb-6 md:mb-0">
             <div className="flex items-center gap-2 md:hidden">
               <GraduationCap className="text-primary w-5 h-5" />
-              <span className="font-bold">CareerPath</span>
+              <span className="font-bold">EduVeda</span>
             </div>
             {onClose && (
               <button

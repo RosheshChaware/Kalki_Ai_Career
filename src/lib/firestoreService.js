@@ -68,11 +68,6 @@ export async function saveOnboardingData(uid, data) {
         }))
       : [];
 
-    // Validate: aiChat must be a flat object with string values
-    const aiChat = (data.aiChat && typeof data.aiChat === 'object' && !Array.isArray(data.aiChat))
-      ? Object.fromEntries(Object.entries(data.aiChat).filter(([, v]) => typeof v === 'string'))
-      : null;
-
     // Build clean, flat top-level document — NO extra fields
     const userData = {
       name,
@@ -87,11 +82,6 @@ export async function saveOnboardingData(uid, data) {
       weakTopics,
       updatedAt: serverTimestamp(),
     };
-
-    // Only include aiChat if it has data
-    if (aiChat && Object.keys(aiChat).length > 0) {
-      userData.aiChat = aiChat;
-    }
 
     const userRef = doc(db, 'users', uid);
     await setDoc(userRef, userData, { merge: true });

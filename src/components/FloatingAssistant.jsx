@@ -25,7 +25,7 @@ const FloatingAssistant = ({ pageContext = 'home' }) => {
   const [messages, setMessages] = useState([
     {
       role: 'model',
-      content: "Hi! 👋 I'm your **Smart AI Assistant**. Ask me about learning paths, careers, scholarships, or study help — I'm powered by Gemini and here to help you succeed!",
+      content: "Hi! 👋 I'm your **EduVeda Assistant**. Ask me about learning paths, careers, scholarships, or study help — I'm powered by Gemini and here to help you succeed!",
     },
   ]);
   const [input, setInput] = useState('');
@@ -171,7 +171,7 @@ const FloatingAssistant = ({ pageContext = 'home' }) => {
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-[#1a1a2e]" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-white leading-tight">Smart AI Assistant</h3>
+              <h3 className="text-sm font-bold text-white leading-tight">EduVeda Assistant</h3>
               <p className="text-[11px] text-green-400 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                 Online • Powered by Gemini
@@ -261,7 +261,7 @@ const FloatingAssistant = ({ pageContext = 'home' }) => {
         {showTooltip && !isOpen && (
           <div className="absolute bottom-full right-0 mb-3 whitespace-nowrap animate-fade-in">
             <div className="bg-[#1a1a2e]/95 backdrop-blur-md text-white text-xs font-medium px-3.5 py-2 rounded-xl border border-white/10 shadow-xl">
-              ✨ Ask Smart AI
+              ✨ Ask EduVeda
               <div className="absolute -bottom-1 right-5 w-2.5 h-2.5 bg-[#1a1a2e] border-r border-b border-white/10 rotate-45" />
             </div>
           </div>

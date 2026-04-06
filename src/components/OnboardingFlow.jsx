@@ -193,7 +193,7 @@ const LoadingScreen = ({ activeStep }) => (
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-purple-500" />
       </div>
     </div>
-    <h2 className="text-2xl font-bold text-white mb-2 text-center">ShikshaSetu AI is Thinking...</h2>
+    <h2 className="text-2xl font-bold text-white mb-2 text-center">EduVeda AI is Thinking...</h2>
     <p className="text-gray-400 text-sm mb-10 text-center">Gemini is deeply analyzing your academic profile</p>
     <div className="w-full max-w-xs space-y-3">
       {LOADING_STEPS.map((s, i) => {
@@ -520,8 +520,9 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
           weakSubjects,
           scores,
           weakTopics,
-          aiChat: data.aiChat || {},
         };
+        console.log("Saving data to Firestore");
+        
         console.log('[Firestore] Saving clean userData:', JSON.stringify(userData, null, 2));
         saveOnboardingData(uid, userData);
       }
@@ -569,14 +570,6 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
       console.log("API CALLED");
       console.log('[API] Response from /api/v1/analyze:', JSON.stringify(aiOutput, null, 2));
 
-      if (uid !== 'anonymous') {
-        console.log("Updating Firestore");
-        console.log("User ID:", uid);
-        const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
-        const { db } = await import('../firebase');
-        await setDoc(doc(db, 'users', uid), { aiOutput, updatedAt: serverTimestamp() }, { merge: true });
-      }
-
       clearInterval(iv);
       setLoadingStep(LOADING_STEPS.length - 1);
       await new Promise(r => setTimeout(r, 600));
@@ -603,7 +596,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
             <SparkleIcon />
           </div>
           <div>
-            <p className="text-sm font-bold text-white leading-tight">ShikshaSetu AI</p>
+            <p className="text-sm font-bold text-white leading-tight">EduVeda AI</p>
             <p className="text-[10px] text-gray-500">Mentorship</p>
           </div>
         </div>
@@ -658,7 +651,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
             <ArrowLeft /> Back
           </button>
           <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
-            <SparkleIcon /><span>ShikshaSetu AI</span>
+            <SparkleIcon /><span>EduVeda AI</span>
           </div>
         </header>
 
@@ -973,7 +966,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                       <Sparkles size={22} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white">ShikshaSetu AI</h3>
+                      <h3 className="text-lg font-bold text-white">EduVeda AI</h3>
                       <p className="text-xs text-gray-500">Personalized learning profiler</p>
                     </div>
                     <div className="ml-auto flex items-center gap-2">

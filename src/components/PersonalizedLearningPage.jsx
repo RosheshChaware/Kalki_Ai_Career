@@ -278,7 +278,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
           <div className="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white">
             <Zap size={18} />
           </div>
-          <span className="font-bold text-lg tracking-wide text-white">Smart AI</span>
+          <span className="font-bold text-lg tracking-wide text-white">EduVeda</span>
         </div>
         
         <nav className="flex-1 px-4 py-2 space-y-1">

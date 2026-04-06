@@ -181,7 +181,7 @@ const CareerOutcomesPage = ({ onClose }) => {
           <ArrowLeft className="w-5 h-5 text-gray-400" />
         </button>
         <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight text-primary">ShikshaSetu</span>
+          <span className="text-xl font-semibold tracking-tight text-primary">EduVeda</span>
         </div>
       </header>
 

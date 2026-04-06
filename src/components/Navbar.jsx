@@ -86,7 +86,7 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent">
-                CareerPath
+                EduVeda
               </span>
               <span className="text-[9px] font-medium tracking-[0.2em] uppercase text-primary/70 -mt-0.5">
                 AI Powered
