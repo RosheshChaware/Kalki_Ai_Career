@@ -1,34 +1,36 @@
 import React from 'react';
 import { Briefcase, UserCircle, DollarSign } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const FeatureCards = ({ onStartAssessment, onOpenLearningPage, onOpenScholarships }) => {
+  const { t } = useTranslation();
   const features = [
     {
       icon: <Briefcase className="w-6 h-6 text-primary" />,
-      title: "Career Path Finder",
-      description: "Take our comprehensive assessment to discover careers that match your interests and strengths.",
-      buttonText: "Start Assessment",
+      title: t('featureCards.features.0.title'),
+      description: t('featureCards.features.0.description'),
+      buttonText: t('featureCards.features.0.buttonText'),
       onClick: onStartAssessment
     },
     {
       icon: <UserCircle className="w-6 h-6 text-primary" />,
-      title: "Personal Dashboard",
-      description: "Track your progress, manage preferences, and get personalized recommendations for your journey.",
-      buttonText: "View Profile",
+      title: t('featureCards.features.1.title'),
+      description: t('featureCards.features.1.description'),
+      buttonText: t('featureCards.features.1.buttonText'),
       onClick: onOpenLearningPage
     },
     {
       icon: <DollarSign className="w-6 h-6 text-primary" />,
-      title: "Scholarship Portal",
-      description: "Discover scholarships and financial aid opportunities to support your educational journey.",
-      buttonText: "Find Scholarships",
+      title: t('featureCards.features.2.title'),
+      description: t('featureCards.features.2.description'),
+      buttonText: t('featureCards.features.2.buttonText'),
       onClick: onOpenScholarships
     }
   ];
 
   return (
     <section className="py-16 px-8 flex flex-col items-center">
-      <h2 className="text-3xl font-bold mb-12">Start Exploring Your Options</h2>
+      <h2 className="text-3xl font-bold mb-12">{t('featureCards.title')}</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
         {features.map((feature, index) => (

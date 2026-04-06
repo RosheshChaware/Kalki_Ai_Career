@@ -1,0 +1,223 @@
+{
+  "navbar": {
+    "subjectAdvisor": "Subject Advisor",
+    "collegeExplorer": "College Explorer",
+    "careerOutcomes": "Career Outcomes",
+    "personalizedProfile": "Personalized Profile",
+    "scholarships": "Scholarships",
+    "signIn": "Sign In",
+    "getStarted": "Get Started",
+    "signOut": "Sign out",
+    "verified": "Verified",
+    "signedInAs": "Signed in as"
+  },
+  "hero": {
+    "badge": "AI-Powered Learning Platform",
+    "titlePart1": "AI Learning Path",
+    "titlePart2": "Generator",
+    "subtitle": "Discover the best learning roadmap tailored to your goals using artificial intelligence.",
+    "features": [
+      "Personalized AI career guidance",
+      "Dynamic skill roadmap generation",
+      "Smart learning recommendations"
+    ],
+    "getStarted": "Get Started",
+    "viewDemo": "View Demo",
+    "botOffline": "Bot Offline",
+    "animationUnavailable": "Animation Unavailable",
+    "botDataMissing": "Bot Data Missing"
+  },
+  "featureCards": {
+    "title": "Start Exploring Your Options",
+    "features": [
+      {
+        "title": "Career Path Finder",
+        "description": "Take our comprehensive assessment to discover careers that match your interests and strengths.",
+        "buttonText": "Start Assessment"
+      },
+      {
+        "title": "Personal Dashboard",
+        "description": "Track your progress, manage preferences, and get personalized recommendations for your journey.",
+        "buttonText": "View Profile"
+      },
+      {
+        "title": "Scholarship Portal",
+        "description": "Discover scholarships and financial aid opportunities to support your educational journey.",
+        "buttonText": "Find Scholarships"
+      }
+    ]
+  },
+  "tools": {
+    "title": "Everything You Need to Plan Your Future",
+    "subtitle": "Comprehensive tools and resources to help you make informed decisions about your education and career path.",
+    "cards": [
+      {
+        "title": "Subject Advisor",
+        "description": "Get personalized recommendations for subject combinations based on your interests and career goals."
+      },
+      {
+        "title": "College Explorer",
+        "description": "Discover local government colleges, courses, and admission requirements tailored to your preferences."
+      },
+      {
+        "title": "Career Outcomes",
+        "description": "Understand job prospects, salary expectations, and skill requirements for different career paths."
+      },
+      {
+        "title": "Learning Profile",
+        "description": "View your AI-powered personalized learning roadmap, performance analysis, and smart recommendations."
+      },
+      {
+        "title": "Resource Library",
+        "description": "Access free e-books, study materials, and skill development resources to support your journey."
+      }
+    ]
+  },
+  "footer": {
+    "tagline": "AI-powered career guidance for students",
+    "description": "Empowering every student with intelligent, personalized learning paths and career roadmaps — built for India's next generation.",
+    "platform": "Platform",
+    "resources": "Resources",
+    "contact": "Contact",
+    "copyright": "© {{year}} EduVeda. All rights reserved.",
+    "madeWith": "Made with ❤️ for India's students",
+    "links": {
+      "Dashboard": "Dashboard",
+      "Career Path": "Career Path",
+      "Roadmap": "Roadmap",
+      "Scholarships": "Scholarships",
+      "Study Material": "Study Material",
+      "Practice Tests": "Practice Tests",
+      "AI Insights": "AI Insights",
+      "Performance Reports": "Performance Reports"
+    }
+  },
+  "dashboard": {
+    "hello": "Hello,",
+    "roadmapSub": "Here is your adaptive learning sequencer designed by AI.",
+    "dashboardSub": "Here's your learning intelligence overview.",
+    "search": "Search...",
+    "actions": "Actions",
+    "quickActions": "Quick Actions",
+    "downloadPdf": "Download Report (PDF)",
+    "viewHistory": "View Learning History",
+    "myNotes": "My Notes",
+    "overallScore": "Overall Score",
+    "strongArea": "Strong Area",
+    "weakArea": "Weak Area",
+    "learningPace": "Learning Pace",
+    "subjectPerf": "Subject Performance",
+    "updateData": "Update Data",
+    "mistakes": "Mistake Distribution",
+    "issues": "Issues",
+    "aiInsights": "AI Insights",
+    "aiInsightsEmpty": "We are still gathering enough data to provide deep insights. Complete more sessions to unlock comprehensive intelligence.",
+    "aiProfile": "AI Learning Profile",
+    "aiProfileSub": "Personalized analysis from your onboarding conversation",
+    "learningStyle": "Learning Style",
+    "studyBehavior": "Study Behavior",
+    "focusLevel": "Focus Level",
+    "keyProblem": "Key Problem",
+    "motivation": "Motivation",
+    "actionPlan": "Action Plan",
+    "smartReco": "Smart Recommendations",
+    "smartRecoSub": "Focused action outputs driven by your performance AI",
+    "studyMat": "Study Materials",
+    "studyMatSub": "Curated dynamically based on your learning style.",
+    "viewRes": "View Resources",
+    "pracQ": "Practice Questions",
+    "pracQSub": "Targeting your key weakness: ",
+    "startPrac": "Start Practice",
+    "jotDown": "Jot down key takeaways or formulas you want to remember from your learning journey.",
+    "startTyping": "Start typing your notes here...",
+    "save": "Save",
+    "prevNotes": "Previous Notes",
+    "noNotes": "No notes saved yet.",
+    "history": "Learning History",
+    "noHistory": "No history available yet.",
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "roadmap": "Roadmap",
+      "careerPath": "Career Path",
+      "settings": "Settings",
+      "exit": "Exit Dashboard"
+    }
+  },
+  "onboarding": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "goBack": "Go Back",
+    "continue": "Continue",
+    "generateAiInsights": "Generate AI Insights",
+    "stepOf": "Step {{step}} of {{total}}",
+    "steps": {
+      "profile": "Academic Profile",
+      "profileSub": "Tell us your class, stream, and goals",
+      "strengths": "Strengths & Gaps",
+      "strengthsSub": "Where you shine and where you struggle",
+      "habits": "Study Habits",
+      "habitsSub": "How and when you study best",
+      "performance": "Performance Data",
+      "performanceSub": "Your recent scores and test results",
+      "aiAna": "AI Learning Analysis",
+      "aiAnaSub": "A quick AI conversation to understand you deeply"
+    },
+    "loading": {
+      "title": "EduVeda AI is Thinking...",
+      "sub": "Gemini is deeply analyzing your academic profile",
+      "wait": "This may take 10–20 seconds. Please wait...",
+      "s1": "Analyzing your academic profile...",
+      "s2": "Mapping subject strengths & weaknesses...",
+      "s3": "Identifying learning patterns...",
+      "s4": "Generating personalized career paths...",
+      "s5": "Crafting your action plan...",
+      "s6": "Finalizing your AI report..."
+    },
+    "chat": {
+      "title": "EduVeda AI",
+      "subtitle": "Personalized learning profiler",
+      "online": "Online",
+      "chooseAnswer": "Choose your answer",
+      "analysisComplete": "Analysis complete — click Generate to see your results",
+      "questionsOf": "{{current}} of {{total}} questions"
+    },
+    "headers": {
+      "academicInfo": "Academic Info",
+      "goalSelection": "Goal Selection",
+      "mediumOfStudy": "Medium of Study",
+      "subjectComp": "Subject Competency",
+      "selfAssess": "Self Assessment",
+      "daily": "Daily Routine",
+      "learningApp": "Learning Approach",
+      "acadHistory": "Academic History",
+      "specific": "Specific Bottlenecks"
+    },
+    "labels": {
+      "class": "Current Class / Year",
+      "stream": "Stream",
+      "langPref": "Language Preference",
+      "strongSubj": "Strong Subjects",
+      "weakSubj": "Weak Subjects",
+      "confidence": "Confidence in Academics",
+      "biggestChall": "What's your biggest academic challenge?",
+      "studyHours": "Study Hours per Day",
+      "prefTime": "Preferred Study Time",
+      "absorbInfo": "How do you absorb information best?",
+      "res": "Primary Study Resources",
+      "autoDoc": "Automated Document Extraction",
+      "uploadResult": "Upload your Latest Test Result",
+      "aiParse": "AI directly parses subjects, marks, and mistakes",
+      "addResult": "Add Subject Result",
+      "overallScore": "Overall Score (%)",
+      "corrQs": "Correct Qs",
+      "incorrQs": "Incorrect Qs",
+      "granWeak": "Granular Weak Topics / Chapters",
+      "priMistake": "Primary Type Of Mistake",
+      "otherOpt": "Other (specify)",
+      "typeSubj": "Type your subject / topic here...",
+      "optnl": "(Optional)",
+      "optnl1": "(Optional PDF/IMG)",
+      "pickAll": "(Pick all that apply)"
+    }
+  }
+}

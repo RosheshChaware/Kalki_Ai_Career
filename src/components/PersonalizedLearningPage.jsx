@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { getUserData } from '../lib/firestoreService';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { jsPDF } from 'jspdf';
+import { useTranslation } from 'react-i18next';
 import { 
   LayoutDashboard, 
   Lightbulb, 
@@ -37,6 +38,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981'];
 const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, onOpenPracticeQuestions, onOpenCareerDetails, onMenuChange, aiResult: freshResult }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(!freshResult);
   const [data, setData] = useState(freshResult || null);
   const [activeMenu, setActiveMenu] = useState('Dashboard');
@@ -295,14 +297,14 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                 activeMenu === m.id ? 'bg-[#1C1C24] text-white shadow-sm' : 'text-gray-400 hover:text-white hover:bg-[#ffffff05]'
               }`}>
               <m.icon size={18} className={activeMenu === m.id ? 'text-indigo-400' : ''} /> 
-              {m.id}
+              {m.id === 'Dashboard' ? t('dashboard.sidebar.dashboard') : m.id === 'Roadmap' ? t('dashboard.sidebar.roadmap') : m.id === 'Career Path' ? t('dashboard.sidebar.careerPath') : t('dashboard.sidebar.settings')}
             </button>
           ))}
         </nav>
 
         <div className="p-4 border-t border-[#ffffff0A]">
           <button onClick={onClose} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all font-medium">
-            <LogOut size={18} /> Exit Dashboard
+            <LogOut size={18} /> {t('dashboard.sidebar.exit')}
           </button>
         </div>
       </aside>
@@ -313,9 +315,9 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
         {/* ── TOP SECTION ── */}
         <header className="px-8 py-6 flex items-end justify-between sticky top-0 bg-[#0A0A0F]/90 backdrop-blur-md z-10 border-b border-[#ffffff0A]">
           <div>
-            <h1 className="text-2xl font-bold text-white leading-tight">Hello, {displayName}</h1>
+            <h1 className="text-2xl font-bold text-white leading-tight">{t('dashboard.hello')} {displayName}</h1>
             <p className="text-gray-400 text-sm mt-1">
-              {activeMenu === 'Roadmap' ? "Here is your adaptive learning sequencer designed by AI." : "Here's your learning intelligence overview."}
+              {activeMenu === 'Roadmap' ? t('dashboard.roadmapSub') : t('dashboard.dashboardSub')}
             </p>
           </div>
           
@@ -324,7 +326,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
               <input 
                 type="text" 
-                placeholder="Search..." 
+                placeholder={t('dashboard.search')} 
                 className="w-64 bg-[#111116] rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 border border-[#ffffff0A] placeholder-gray-500 transition-all" 
               />
             </div>
@@ -339,7 +341,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                 onClick={() => setActionsOpen(!actionsOpen)}
                 className="flex items-center gap-2 bg-[#1A1A22] hover:bg-[#252530] text-gray-200 border border-[#ffffff10] px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm"
               >
-                <span className="hidden sm:inline">Actions</span>
+                <span className="hidden sm:inline">{t('dashboard.actions')}</span>
                 <ChevronDown size={16} className={`transition-transform duration-200 ${actionsOpen ? 'rotate-180' : ''}`} />
               </button>
               
@@ -352,22 +354,22 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                   />
                   <div className="fixed bottom-0 left-0 right-0 md:absolute md:bottom-auto md:left-auto md:right-0 md:top-full md:mt-2 bg-[#1C1C24] border border-[#ffffff10] shadow-2xl md:w-56 rounded-t-2xl md:rounded-xl z-50 overflow-hidden transform transition-all duration-300 py-2">
                     <div className="px-4 py-4 mb-2 border-b border-[#ffffff0A] md:hidden">
-                      <h3 className="text-white font-bold text-center text-lg">Quick Actions</h3>
+                      <h3 className="text-white font-bold text-center text-lg">{t('dashboard.quickActions')}</h3>
                     </div>
                     
                     <button onClick={downloadPDF} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#ffffff0A] text-gray-300 hover:text-white transition-colors group">
                       <Download size={16} className="text-gray-500 group-hover:text-indigo-400 transition-colors" />
-                      <span className="text-sm font-medium">Download Report (PDF)</span>
+                      <span className="text-sm font-medium">{t('dashboard.downloadPdf')}</span>
                     </button>
                     
                     <button onClick={() => { setActionsOpen(false); setIsHistoryOpen(true); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#ffffff0A] text-gray-300 hover:text-white transition-colors group">
                       <History size={16} className="text-gray-500 group-hover:text-green-400 transition-colors" />
-                      <span className="text-sm font-medium">View Learning History</span>
+                      <span className="text-sm font-medium">{t('dashboard.viewHistory')}</span>
                     </button>
                     
                     <button onClick={() => { setActionsOpen(false); setIsNotesOpen(true); }} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#ffffff0A] text-gray-300 hover:text-white transition-colors group">
                       <FileText size={16} className="text-gray-500 group-hover:text-purple-400 transition-colors" />
-                      <span className="text-sm font-medium">My Notes</span>
+                      <span className="text-sm font-medium">{t('dashboard.myNotes')}</span>
                     </button>
                   </div>
                 </>
@@ -397,7 +399,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                     <Trophy size={22} />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Overall Score</p>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">{t('dashboard.overallScore')}</p>
                     <p className="text-xl font-bold text-white">{avgScore}%</p>
                   </div>
                 </div>
@@ -406,7 +408,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                     <TrendingUp size={22} />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Strong Area</p>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">{t('dashboard.strongArea')}</p>
                     <p className="text-xl font-bold text-white truncate max-w-[140px]">{ai.strongSubjects?.[0]?.subject || 'N/A'}</p>
                   </div>
                 </div>
@@ -415,7 +417,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                     <AlertTriangle size={22} />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Weak Area</p>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">{t('dashboard.weakArea')}</p>
                     <p className="text-xl font-bold text-white truncate max-w-[140px]">{ai.weakSubjects?.[0]?.subject || 'N/A'}</p>
                   </div>
                 </div>
@@ -424,7 +426,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                     <Zap size={22} />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Learning Pace</p>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">{t('dashboard.learningPace')}</p>
                     <p className="text-xl font-bold text-white capitalize">{ai.learningProfile?.consistencyLevel || 'Not Analyzed'}</p>
                   </div>
                 </div>
@@ -434,8 +436,8 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
               <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-[#111116] rounded-2xl p-6 border border-[#ffffff0A]">
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="font-bold text-white">Subject Performance</h2>
-                    <button onClick={handleUpdateData} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">Update Data</button>
+                    <h2 className="font-bold text-white">{t('dashboard.subjectPerf')}</h2>
+                    <button onClick={handleUpdateData} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">{t('dashboard.updateData')}</button>
                   </div>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -454,7 +456,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                 </div>
 
                 <div className="bg-[#111116] rounded-2xl p-6 border border-[#ffffff0A] flex flex-col">
-                  <h2 className="font-bold text-white mb-6">Mistake Distribution</h2>
+                  <h2 className="font-bold text-white mb-6">{t('dashboard.mistakes')}</h2>
                   <div className="flex-1 flex items-center justify-center relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -476,7 +478,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                     {/* Center text */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       <span className="text-2xl font-bold text-white">{ai.learningIssues?.length || 0}</span>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-wider">Issues</span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-wider">{t('dashboard.issues')}</span>
                     </div>
                   </div>
                 </div>
@@ -487,10 +489,10 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                 <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500 rounded-l-2xl" />
                 <div className="flex items-center gap-3 mb-4">
                   <Lightbulb className="text-indigo-400" size={20} />
-                  <h2 className="font-bold text-white text-lg">AI Insights</h2>
+                  <h2 className="font-bold text-white text-lg">{t('dashboard.aiInsights')}</h2>
                 </div>
                 <p className="text-gray-300 leading-relaxed max-w-5xl text-[15px]">
-                  {ai.insights?.overallAnalysis || "We are still gathering enough data to provide deep insights. Complete more sessions to unlock comprehensive intelligence."}
+                  {ai.insights?.overallAnalysis || t('dashboard.aiInsightsEmpty')}
                 </p>
               </section>
 
@@ -502,17 +504,17 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                       <Sparkles size={16} className="text-indigo-400" />
                     </div>
                     <div>
-                      <h2 className="font-bold text-white">AI Learning Profile</h2>
-                      <p className="text-[11px] text-gray-500">Personalized analysis from your onboarding conversation</p>
+                      <h2 className="font-bold text-white">{t('dashboard.aiProfile')}</h2>
+                      <p className="text-[11px] text-gray-500">{t('dashboard.aiProfileSub')}</p>
                     </div>
                   </div>
                   <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[
-                      { key: 'learningStyle', label: 'Learning Style', icon: '🧠', color: 'indigo' },
-                      { key: 'studyBehavior', label: 'Study Behavior', icon: '📚', color: 'purple' },
-                      { key: 'focusLevel', label: 'Focus Level', icon: '🎯', color: 'blue' },
-                      { key: 'primaryStruggle', label: 'Key Problem', icon: '⚡', color: 'orange' },
-                      { key: 'motivation', label: 'Motivation', icon: '🔥', color: 'green' },
+                      { key: 'learningStyle', label: t('dashboard.learningStyle'), icon: '🧠', color: 'indigo' },
+                      { key: 'studyBehavior', label: t('dashboard.studyBehavior'), icon: '📚', color: 'purple' },
+                      { key: 'focusLevel', label: t('dashboard.focusLevel'), icon: '🎯', color: 'blue' },
+                      { key: 'primaryStruggle', label: t('dashboard.keyProblem'), icon: '⚡', color: 'orange' },
+                      { key: 'motivation', label: t('dashboard.motivation'), icon: '🔥', color: 'green' },
                     ].filter(item => data.aiChat[item.key]).map(item => {
                       const colorMap = {
                         indigo: { bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-300', dot: 'bg-indigo-500' },
@@ -539,7 +541,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
               {/* ── ROW 4: ACTION PLAN ── */}
               <section>
                 <h2 className="font-bold text-white mb-5 flex items-center gap-2">
-                  <Target size={18} className="text-purple-400" /> Action Plan
+                  <Target size={18} className="text-purple-400" /> {t('dashboard.actionPlan')}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {(ai.recommendedFocus || []).slice(0, 3).map((plan, idx) => (
@@ -591,9 +593,9 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
 
                 <div className="mb-8">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Lightbulb size={22} className="text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" /> Smart Recommendations
+                    <Lightbulb size={22} className="text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" /> {t('dashboard.smartReco')}
                   </h2>
-                  <p className="text-sm text-gray-500 mt-1">Focused action outputs driven by your performance AI</p>
+                  <p className="text-sm text-gray-500 mt-1">{t('dashboard.smartRecoSub')}</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mix-blend-lighten">
@@ -601,14 +603,14 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                   <div className="bg-[#1C1C24]/60 rounded-xl p-6 border border-[#ffffff0A] hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(79,70,229,0.1)] transition-all duration-300">
                     <h3 className="font-bold text-white text-lg mb-2 flex items-center gap-2">
                       <BookOpen size={20} className="text-indigo-400 shrink-0" />
-                      Study Materials
+                      {t('dashboard.studyMat')}
                     </h3>
-                    <p className="text-sm text-gray-400 mb-6 truncate">Curated dynamically based on your learning style.</p>
+                    <p className="text-sm text-gray-400 mb-6 truncate">{t('dashboard.studyMatSub')}</p>
                     <button 
                       onClick={onOpenStudyMaterials}
                       className="w-full py-3 rounded-lg bg-[#252530]/80 hover:bg-indigo-600/10 hover:text-indigo-300 font-semibold transition-all border border-transparent hover:border-indigo-500/30 text-gray-300 active:scale-95"
                     >
-                      View Resources
+                      {t('dashboard.viewRes')}
                     </button>
                   </div>
 
@@ -616,14 +618,14 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                   <div className="bg-[#1C1C24]/60 rounded-xl p-6 border border-[#ffffff0A] hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(79,70,229,0.1)] transition-all duration-300">
                     <h3 className="font-bold text-white text-lg mb-2 flex items-center gap-2">
                       <ClipboardList size={20} className="text-indigo-400 shrink-0" />
-                      Practice Questions
+                      {t('dashboard.pracQ')}
                     </h3>
-                    <p className="text-sm text-gray-400 mb-6 truncate">Targeting your key weakness: {ai.weakSubjects?.[0]?.subject || 'Identified Gaps'}.</p>
+                    <p className="text-sm text-gray-400 mb-6 truncate">{t('dashboard.pracQSub')}{ai.weakSubjects?.[0]?.subject || t('dashboard.identifiedGaps')}.</p>
                     <button 
                       onClick={onOpenPracticeQuestions}
                       className="w-full py-3 rounded-lg bg-[#252530]/80 hover:bg-indigo-600/10 hover:text-indigo-300 font-semibold transition-all border border-transparent hover:border-indigo-500/30 text-gray-300 active:scale-95"
                     >
-                      Start Practice
+                      {t('dashboard.startPrac')}
                     </button>
                   </div>
                 </div>
@@ -650,28 +652,28 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
             <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
               <FileText size={18} />
             </div>
-            <h2 className="font-bold">My Notes</h2>
+            <h2 className="font-bold">{t('dashboard.myNotes')}</h2>
           </div>
           <button onClick={() => setIsNotesOpen(false)} className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-[#1C1C24] transition-colors"><X size={20} /></button>
         </div>
         <div className="p-6 flex-1 overflow-y-auto w-full flex flex-col gap-4">
-          <p className="text-gray-400 text-sm">Jot down key takeaways or formulas you want to remember from your learning journey.</p>
+          <p className="text-gray-400 text-sm">{t('dashboard.jotDown')}</p>
           <div className="flex flex-col gap-2 relative">
             <textarea
               value={notesContent}
               onChange={(e) => setNotesContent(e.target.value)}
-              placeholder="Start typing your notes here..."
+              placeholder={t('dashboard.startTyping')}
               className="w-full h-[150px] bg-[#1A1A22] text-gray-200 border border-[#ffffff10] focus:border-purple-500/40 rounded-xl p-4 text-sm leading-relaxed focus:outline-none transition-all resize-none shadow-inner"
             />
             <button onClick={saveNote} className="absolute bottom-3 right-3 flex items-center justify-center gap-1 bg-purple-600 hover:bg-purple-500 text-white font-medium py-1.5 px-4 rounded-xl transition-all shadow-md shadow-purple-900/40 text-xs">
-              <Save size={14} /> Save
+              <Save size={14} /> {t('dashboard.save')}
             </button>
           </div>
           
           <div className="border-t border-[#ffffff0A] pt-4 mt-2 flex-1 flex flex-col gap-3">
-            <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Previous Notes</h3>
+            <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">{t('dashboard.prevNotes')}</h3>
             {savedNotes.length === 0 ? (
-                <p className="text-xs text-gray-600 italic px-2">No notes saved yet.</p>
+                <p className="text-xs text-gray-600 italic px-2">{t('dashboard.noNotes')}</p>
             ) : (
                 savedNotes.map((note, i) => (
                     <div key={i} className="bg-[#1C1C24] border border-[#ffffff0A] rounded-xl p-4 flex flex-col gap-2 hover:border-[#ffffff15] transition-colors">
@@ -691,7 +693,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
             <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-400 flex items-center justify-center">
               <History size={18} />
             </div>
-            <h2 className="font-bold">Learning History</h2>
+            <h2 className="font-bold">{t('dashboard.history')}</h2>
           </div>
           <button onClick={() => setIsHistoryOpen(false)} className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-[#1C1C24] transition-colors"><X size={20} /></button>
         </div>
@@ -701,7 +703,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
           
           <div className="space-y-8 relative">
             {historyList.length === 0 ? (
-                <p className="text-xs text-gray-600 italic px-2">No history available yet.</p>
+                <p className="text-xs text-gray-600 italic px-2">{t('dashboard.noHistory')}</p>
             ) : (
                 historyList.map((hist, idx) => (
                   <div key={idx} className="flex gap-4 relative">

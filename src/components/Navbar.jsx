@@ -2,13 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { GraduationCap, Menu, X, LogOut, ChevronDown, CheckCircle2, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer, onOpenCareerOutcomes, onOpenLearningPage, onOpenScholarships }) => {
+  const { t, i18n } = useTranslation();
   const { user, logOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeLink, setActiveLink] = useState(null);
+
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === 'en' ? 'hi' : 'en';
+    i18n.changeLanguage(nextLang);
+  };
 
   // Get initials from display name
   const initials = user?.displayName
@@ -25,11 +32,11 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
   }, []);
 
   const navLinks = [
-    { label: 'Subject Advisor', onClick: () => { onStartAssessment(); setMobileOpen(false); }, icon: '🧠' },
-    { label: 'College Explorer', onClick: () => { if(onOpenExplorer) onOpenExplorer(); setMobileOpen(false); }, icon: '🏫' },
-    { label: 'Career Outcomes', onClick: () => { if(onOpenCareerOutcomes) onOpenCareerOutcomes(); setMobileOpen(false); }, icon: '📊' },
-    { label: 'Personalized Profile', onClick: () => { if(onOpenLearningPage) onOpenLearningPage(); setMobileOpen(false); }, icon: '🎯' },
-    { label: 'Scholarships', onClick: () => { if(onOpenScholarships) onOpenScholarships(); setMobileOpen(false); }, icon: '🎓' },
+    { label: t('navbar.subjectAdvisor'), onClick: () => { onStartAssessment(); setMobileOpen(false); }, icon: '🧠' },
+    { label: t('navbar.collegeExplorer'), onClick: () => { if(onOpenExplorer) onOpenExplorer(); setMobileOpen(false); }, icon: '🏫' },
+    { label: t('navbar.careerOutcomes'), onClick: () => { if(onOpenCareerOutcomes) onOpenCareerOutcomes(); setMobileOpen(false); }, icon: '📊' },
+    { label: t('navbar.personalizedProfile'), onClick: () => { if(onOpenLearningPage) onOpenLearningPage(); setMobileOpen(false); }, icon: '🎯' },
+    { label: t('navbar.scholarships'), onClick: () => { if(onOpenScholarships) onOpenScholarships(); setMobileOpen(false); }, icon: '🎓' },
   ];
 
   // Mobile drawer animation variants
@@ -122,6 +129,12 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
 
           {/* Right actions (desktop) */}
           <div className="hidden lg:flex items-center gap-3">
+            <button
+              onClick={toggleLanguage}
+              className="text-[13px] font-medium px-3 py-1.5 rounded-xl border border-white/10 hover:border-white/20 text-white/70 hover:text-white bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 mr-2"
+            >
+              {i18n.language === 'en' ? 'हिन्दी' : 'EN'}
+            </button>
             {user ? (
               /* ── Logged-in user menu ── */
               <div className="relative">
@@ -152,11 +165,11 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
                       className="absolute right-0 top-full mt-2.5 w-56 rounded-2xl border border-white/10 bg-[#0c0c0f]/95 backdrop-blur-2xl shadow-2xl shadow-black/50 overflow-hidden z-50"
                     >
                       <div className="px-4 py-3.5 border-b border-white/5">
-                        <p className="text-[11px] text-white/40 uppercase tracking-wider font-semibold mb-1">Signed in as</p>
+                        <p className="text-[11px] text-white/40 uppercase tracking-wider font-semibold mb-1">{t('navbar.signedInAs')}</p>
                         <p className="text-sm font-medium truncate text-white/90">{user.email}</p>
                         {user.emailVerified && (
                           <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] uppercase font-bold text-emerald-400 tracking-wide">
-                            <CheckCircle2 className="w-3 h-3" /> Verified
+                            <CheckCircle2 className="w-3 h-3" /> {t('navbar.verified')}
                           </span>
                         )}
                       </div>
@@ -165,7 +178,7 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
                         className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors duration-200"
                       >
                         <LogOut className="w-4 h-4" />
-                        Sign out
+                        {t('navbar.signOut')}
                       </button>
                     </motion.div>
                   )}
@@ -180,7 +193,7 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
                   onClick={onOpenSignIn}
                   className="text-[13px] font-medium px-5 py-2.5 rounded-xl border border-white/10 hover:border-white/20 text-white/70 hover:text-white bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300"
                 >
-                  Sign In
+                  {t('navbar.signIn')}
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.04 }}
@@ -194,7 +207,7 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
                   <div className="absolute inset-0 bg-gradient-to-r from-primary via-purple-500 to-primary opacity-0 group-hover:opacity-40 blur-xl transition-opacity duration-500" />
                   <span className="relative z-10 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
-                    Get Started
+                    {t('navbar.getStarted')}
                   </span>
                 </motion.button>
               </div>
@@ -246,6 +259,15 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
                   </motion.button>
                 ))}
 
+                <motion.button
+                  variants={itemVariants}
+                  onClick={toggleLanguage}
+                  className="flex items-center gap-3 text-left text-white/60 hover:text-white hover:bg-white/[0.05] transition-all duration-200 text-sm font-medium px-4 py-3 rounded-xl mt-2"
+                >
+                  <span className="text-lg">🌐</span>
+                  {i18n.language === 'en' ? 'हिन्दी में बदलें' : 'Change to EN'}
+                </motion.button>
+
                 <motion.div variants={itemVariants} className="mt-3 pt-4 border-t border-white/5 flex flex-col gap-3">
                   {user ? (
                     <>
@@ -261,7 +283,7 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
                         </div>
                         {user.emailVerified && (
                           <div className="inline-flex items-center gap-1 self-start px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
-                            <CheckCircle2 className="w-3 h-3" /> Verified
+                            <CheckCircle2 className="w-3 h-3" /> {t('navbar.verified')}
                           </div>
                         )}
                       </div>
@@ -270,7 +292,7 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
                         className="flex items-center justify-center gap-2 text-sm font-medium text-red-400 border border-red-500/15 hover:bg-red-500/10 py-3 rounded-xl transition-colors duration-200"
                       >
                         <LogOut className="w-4 h-4" />
-                        Sign out
+                        {t('navbar.signOut')}
                       </button>
                     </>
                   ) : (
@@ -279,7 +301,7 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
                         onClick={() => { onOpenSignIn(); setMobileOpen(false); }}
                         className="text-sm font-medium px-4 py-3 rounded-xl border border-white/10 hover:border-white/20 text-white/70 hover:text-white bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 w-full"
                       >
-                        Sign In
+                        {t('navbar.signIn')}
                       </button>
                       <button
                         onClick={() => { onOpenSignUp(); setMobileOpen(false); }}
@@ -288,7 +310,7 @@ const Navbar = ({ onStartAssessment, onOpenSignIn, onOpenSignUp, onOpenExplorer,
                         <div className="absolute inset-0 bg-gradient-to-r from-primary via-purple-500 to-primary" />
                         <span className="relative z-10 flex items-center justify-center gap-2">
                           <Sparkles className="w-4 h-4" />
-                          Get Started
+                          {t('navbar.getStarted')}
                         </span>
                       </button>
                     </>

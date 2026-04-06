@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 // Icons as inline SVG for zero-dependency usage
 const BoltIcon = () => (
@@ -90,6 +91,7 @@ const SocialButton = ({ href, icon, label }) => (
 // ─── Main Footer ─────────────────────────────────────────────────────────────
 
 const Footer = () => {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -402,10 +404,9 @@ const Footer = () => {
                 </span>
                 <span className="ss-brand-logo-text">EduVeda</span>
               </a>
-              <p className="ss-brand-tagline">AI-powered career guidance for students</p>
+              <p className="ss-brand-tagline">{t('footer.tagline')}</p>
               <p className="ss-brand-description">
-                Empowering every student with intelligent, personalized learning
-                paths and career roadmaps — built for India's next generation.
+                {t('footer.description')}
               </p>
               <div className="ss-social-row">
                 <SocialButton href="mailto:support@shikhasetu.ai"          label="Email"    icon={<MailIcon />} />
@@ -416,27 +417,27 @@ const Footer = () => {
 
             {/* ── Column 2: Platform ──────────────────────────────── */}
             <div className="ss-footer-section">
-              <h3 className="ss-section-heading">Platform</h3>
+              <h3 className="ss-section-heading">{t('footer.platform')}</h3>
               <ul className="ss-link-list">
                 {navLinks.map((link) => (
-                  <FooterLinkItem key={link.label} {...link} />
+                  <FooterLinkItem key={link.label} {...link} label={t(`footer.links.${link.label}`)} />
                 ))}
               </ul>
             </div>
 
             {/* ── Column 3: Resources ─────────────────────────────── */}
             <div className="ss-footer-section">
-              <h3 className="ss-section-heading">Resources</h3>
+              <h3 className="ss-section-heading">{t('footer.resources')}</h3>
               <ul className="ss-link-list">
                 {resourceLinks.map((link) => (
-                  <FooterLinkItem key={link.label} {...link} />
+                  <FooterLinkItem key={link.label} {...link} label={t(`footer.links.${link.label}`)} />
                 ))}
               </ul>
             </div>
 
             {/* ── Column 4: Contact ───────────────────────────────── */}
             <div className="ss-footer-section">
-              <h3 className="ss-section-heading">Contact</h3>
+              <h3 className="ss-section-heading">{t('footer.contact')}</h3>
               <ul className="ss-link-list">
                 {contactLinks.map((item) => (
                   <FooterContactItem key={item.label} {...item} />
@@ -450,9 +451,9 @@ const Footer = () => {
         {/* ── Bottom Bar ────────────────────────────────────────── */}
         <div className="ss-footer-bottom">
           <span className="ss-copyright">
-            © {currentYear} EduVeda. All rights reserved.
+            {t('footer.copyright', { year: currentYear })}
           </span>
-          <span className="ss-made-with">Made with ❤️ for India's students</span>
+          <span className="ss-made-with">{t('footer.madeWith')}</span>
         </div>
       </footer>
     </>

@@ -1,36 +1,38 @@
 import React from 'react';
 import { Book, GraduationCap, TrendingUp, NotebookTabs, Brain } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Tools = ({ onOpenExplorer, onOpenCareerOutcomes, onOpenLearningPage, onOpenStudyMaterials }) => {
+  const { t } = useTranslation();
   const tools = [
     {
       icon: <Book className="w-6 h-6 text-primary" />,
-      title: "Subject Advisor",
-      description: "Get personalized recommendations for subject combinations based on your interests and career goals.",
+      title: t('tools.cards.0.title'),
+      description: t('tools.cards.0.description'),
       onClick: null // Could map to subject advisor if needed
     },
     {
       icon: <GraduationCap className="w-6 h-6 text-primary" />,
-      title: "College Explorer",
-      description: "Discover local government colleges, courses, and admission requirements tailored to your preferences.",
+      title: t('tools.cards.1.title'),
+      description: t('tools.cards.1.description'),
       onClick: onOpenExplorer
     },
     {
       icon: <TrendingUp className="w-6 h-6 text-primary" />,
-      title: "Career Outcomes",
-      description: "Understand job prospects, salary expectations, and skill requirements for different career paths.",
+      title: t('tools.cards.2.title'),
+      description: t('tools.cards.2.description'),
       onClick: onOpenCareerOutcomes
     },
     {
       icon: <Brain className="w-6 h-6 text-primary" />,
-      title: "Learning Profile",
-      description: "View your AI-powered personalized learning roadmap, performance analysis, and smart recommendations.",
+      title: t('tools.cards.3.title'),
+      description: t('tools.cards.3.description'),
       onClick: onOpenLearningPage
     },
     {
       icon: <NotebookTabs className="w-6 h-6 text-primary" />,
-      title: "Resource Library",
-      description: "Access free e-books, study materials, and skill development resources to support your journey.",
+      title: t('tools.cards.4.title'),
+      description: t('tools.cards.4.description'),
       onClick: onOpenStudyMaterials
     }
   ];
@@ -38,9 +40,9 @@ const Tools = ({ onOpenExplorer, onOpenCareerOutcomes, onOpenLearningPage, onOpe
   return (
     <section className="py-24 px-8 flex flex-col items-center">
       <div className="text-center max-w-3xl mb-16">
-        <h2 className="text-3xl md:text-4xl font-bold mb-6">Everything You Need to Plan Your Future</h2>
+        <h2 className="text-3xl md:text-4xl font-bold mb-6">{t('tools.title')}</h2>
         <p className="text-textMuted text-base md:text-lg">
-          Comprehensive tools and resources to help you make informed decisions about your education and career path.
+          {t('tools.subtitle')}
         </p>
       </div>
 

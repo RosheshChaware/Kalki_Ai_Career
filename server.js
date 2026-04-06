@@ -235,6 +235,7 @@ app.post('/api/v1/analyze', async (req, res) => {
     ].join('\n');
 
     const SYSTEM_PROMPT = `You are an advanced academic AI. Predict subjects, learning styles, and careers accurately for an Indian high school audience.
+IMPORTANT: YOU MUST RESPOND IN THE LANGUAGE SPECIFIED IN THE CONTEXT (e.g. Hindi, English).
 Output EXACT STRICT JSON ONLY with the following structure:
 {
   "strongSubjects": [{"subject": "", "confidence": 0, "reason": ""}],
@@ -314,11 +315,12 @@ OUTPUT: Return a JSON object with a "roadmap" key containing a JSON ARRAY. Confo
   ]
 }`;
 
+    const langPhrase = userContext?.language ? `\n[RESPOND IN LANGUAGE: ${userContext.language}]` : '';
     const userPrompt = `SCORE SIGNAL: ${hasScore ? `Test score = ${scoreNum}%. Tier: ${scoreTier}` : 'No score provided.'}
 MESSAGE SIGNAL: ${hasMessage ? `Student says: "${newProgress.experience}"` : 'No message provided.'}
 CURRENT SUBJECT FOCUS: ${newProgress.subject || 'General'}
 EXISTING ROADMAP: ${JSON.stringify(currentRoadmap || [])}
-USER CONTEXT: ${JSON.stringify(userContext || {})}`;
+USER CONTEXT: ${JSON.stringify(userContext || {})}${langPhrase}`;
 
     console.log('[/roadmap/update] Sending to Groq...');
     const jsonOutput = await groqJSON(systemPrompt, userPrompt);
@@ -360,8 +362,9 @@ app.post('/api/v1/roadmap/chat', async (req, res) => {
 You help students understand their learning roadmap, break down tasks, and stay motivated.
 Keep responses concise, encouraging, and actionable. Always consider the Indian education context.`;
 
-    const contextPrefix = context ? `[USER CONTEXT FOCUS: ${context.focus}] ` : '';
-    const reply = await groqChat(systemInstruction, chatHistory, contextPrefix + message);
+    const contextPrefix = context?.focus ? `[USER CONTEXT FOCUS: ${context.focus}] ` : '';
+    const langPrefix = context?.language ? `[RESPOND IN LANGUAGE: ${context.language}] ` : '';
+    const reply = await groqChat(systemInstruction, chatHistory, contextPrefix + langPrefix + message);
     res.status(200).json({ reply });
   } catch (error) {
     console.error('Error in /api/v1/roadmap/chat:', error.message);
@@ -392,7 +395,8 @@ Be encouraging and supportive. Always consider the Indian education context.
 If the user context mentions a specific focus area, tailor your response to that domain.`;
 
     const contextPrefix = context?.focus ? `[CONTEXT: ${context.focus}] ` : '';
-    const reply = await groqChat(systemInstruction, chatHistory, contextPrefix + message);
+    const langPrefix = context?.language ? `[RESPOND IN LANGUAGE: ${context.language}] ` : '';
+    const reply = await groqChat(systemInstruction, chatHistory, contextPrefix + langPrefix + message);
     res.status(200).json({ reply });
   } catch (error) {
     console.error('Error in /api/v1/assistant/chat:', error.message);
@@ -403,16 +407,17 @@ If the user context mentions a specific focus area, tailor your response to that
 // ── CAREER DETAILS ──
 app.post('/api/v1/career/details', async (req, res) => {
   try {
-    const { career } = sanitizeData(req.body);
+    const { career, language } = sanitizeData(req.body);
     if (!career) return res.status(400).json({ error: 'Career identifier is required' });
 
-    const cacheKey = getCacheKey('career_details', career);
+    const cacheKey = getCacheKey('career_details', { career, language });
     if (apiCache.has(cacheKey)) {
       console.log(`[Cache Hit] Returning cached career details for ${career} to avoid API limits.`);
       return res.status(200).json(apiCache.get(cacheKey));
     }
 
-    const systemPrompt = `You are a career research expert. Provide detailed, accurate career information for Indian students. Output STRICT JSON ONLY.`;
+    const systemPrompt = `You are a career research expert. Provide detailed, accurate career information for Indian students. Output STRICT JSON ONLY.
+IMPORTANT: YOU MUST RESPOND IN THE FOLLOWING LANGUAGE: ${language || 'English'}.`;
     const userPrompt = `Provide advanced career metrics for: ${career}.
 Return JSON exactly mapping:
 {
@@ -441,16 +446,17 @@ Return JSON exactly mapping:
 // ── AI STUDY MATERIALS ──
 app.post('/api/v1/content/study-materials', async (req, res) => {
   try {
-    const { goal, subjects, weakTopics, strongSubjects, currentClass } = sanitizeData(req.body);
+    const { goal, subjects, weakTopics, strongSubjects, currentClass, language } = sanitizeData(req.body);
     if (!goal) return res.status(400).json({ error: 'goal is required' });
 
-    const cacheKey = getCacheKey('study_materials', { goal, currentClass });
+    const cacheKey = getCacheKey('study_materials', { goal, currentClass, language });
     if (apiCache.has(cacheKey)) {
       console.log(`[Cache Hit] study-materials for ${goal}`);
       return res.status(200).json(apiCache.get(cacheKey));
     }
 
-    const systemPrompt = `You are an expert Indian education resource curator. Generate personalized study materials for a student. Output STRICT JSON ONLY.`;
+    const systemPrompt = `You are an expert Indian education resource curator. Generate personalized study materials for a student. Output STRICT JSON ONLY.
+IMPORTANT: YOU MUST RESPOND IN THE FOLLOWING LANGUAGE: ${language || 'English'}.`;
     const userPrompt = `Generate study materials for a student with the following profile:
 - Goal: ${goal}
 - Class/Year: ${currentClass || 'Not specified'}
@@ -496,17 +502,18 @@ Rules:
 // ── AI QUIZ (MCQ) ──
 app.post('/api/v1/content/quiz', async (req, res) => {
   try {
-    const { goal, weakSubject, subjects, currentClass } = sanitizeData(req.body);
+    const { goal, weakSubject, subjects, currentClass, language } = sanitizeData(req.body);
     if (!goal) return res.status(400).json({ error: 'goal is required' });
 
     const focusSubject = weakSubject || (subjects || [])[0] || 'General';
-    const cacheKey = getCacheKey('quiz', { goal, focusSubject, currentClass });
+    const cacheKey = getCacheKey('quiz', { goal, focusSubject, currentClass, language });
     if (apiCache.has(cacheKey)) {
       console.log(`[/content/quiz] Cache HIT for ${goal} - ${focusSubject}`);
       return res.status(200).json(apiCache.get(cacheKey));
     }
 
-    const systemPrompt = `You are an expert exam question setter for Indian competitive and academic exams. Output STRICT JSON ONLY — a JSON array of questions, wrapped in an object.`;
+    const systemPrompt = `You are an expert exam question setter for Indian competitive and academic exams. Output STRICT JSON ONLY — a JSON array of questions, wrapped in an object.
+IMPORTANT: YOU MUST RESPOND IN THE FOLLOWING LANGUAGE: ${language || 'English'}.`;
     const userPrompt = `Generate exactly 8 high-quality MCQ questions for:
 - Exam/Goal: ${goal}
 - Subject Focus: ${focusSubject}
@@ -554,10 +561,10 @@ Return JSON with this exact structure:
 // ── AI PYQ PRACTICE (with cache) ──
 app.post('/api/v1/content/pyq', async (req, res) => {
   try {
-    const { goal, subjects, weakTopics, currentClass } = sanitizeData(req.body);
+    const { goal, subjects, weakTopics, currentClass, language } = sanitizeData(req.body);
     if (!goal) return res.status(400).json({ error: 'goal is required' });
 
-    const cacheKey = getCacheKey('pyq', { goal, currentClass });
+    const cacheKey = getCacheKey('pyq', { goal, currentClass, language });
     if (apiCache.has(cacheKey)) {
       console.log(`[/content/pyq] Cache HIT for ${goal}`);
       return res.status(200).json(apiCache.get(cacheKey));
@@ -569,7 +576,8 @@ app.post('/api/v1/content/pyq', async (req, res) => {
     }
     inFlightRequests.add(cacheKey);
 
-    const systemPrompt = `You are an expert in Indian competitive exam previous year questions (PYQs). Output STRICT JSON ONLY.`;
+    const systemPrompt = `You are an expert in Indian competitive exam previous year questions (PYQs). Output STRICT JSON ONLY.
+IMPORTANT: YOU MUST RESPOND IN THE FOLLOWING LANGUAGE: ${language || 'English'}.`;
     const userPrompt = `Generate 10 PYQ-style questions for:
 - Exam: ${goal}
 - Subjects: ${(subjects || []).join(', ') || 'General'}

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Target, CheckCircle2, Circle, MessageSquare, Send, RefreshCw, AlertCircle, FileText, CheckCheck, XCircle, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 const AdaptiveRoadmap = ({ aiResult, user }) => {
+  const { i18n } = useTranslation();
   const [roadmap, setRoadmap] = useState([]);
   const [loading, setLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState([{ role: 'model', content: "Hi! I'm your AI Mentor. Let me know if you need help with any step on your roadmap!" }]);
@@ -97,7 +99,7 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
     try {
       const payload = {
         currentRoadmap: roadmap,
-        userContext: aiResult,
+        userContext: { ...aiResult, language: i18n.language },
         newProgress: {
           experience: progressInput.trim(),
           testScore: testScore.trim(),
@@ -177,7 +179,8 @@ const AdaptiveRoadmap = ({ aiResult, user }) => {
             history: chatHistory,
             context: {
               focus: roadmap.find(r => r.status === 'in-progress')?.title || 'General',
-              weakness: aiResult?.weakSubjects?.[0]?.subject
+              weakness: aiResult?.weakSubjects?.[0]?.subject,
+              language: i18n.language
             }
           })
         });

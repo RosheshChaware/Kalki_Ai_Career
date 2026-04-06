@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { saveOnboardingData } from '../lib/firestoreService';
+import { useTranslation } from 'react-i18next';
 import { GraduationCap, Brain, Clock, BarChart2, Sparkles } from 'lucide-react';
 import { getGoalsForStream, getSubjectsForGoal } from '../data/goalIntelligence';
 
@@ -29,20 +30,20 @@ const WEAK_TOPICS = [
 ];
 
 const LOADING_STEPS = [
-  { label: 'Analyzing your academic profile...' },
-  { label: 'Mapping subject strengths & weaknesses...' },
-  { label: 'Identifying learning patterns...' },
-  { label: 'Generating personalized career paths...' },
-  { label: 'Crafting your action plan...' },
-  { label: 'Finalizing your AI report...' },
+  { labelKey: 'onboarding.loading.s1' },
+  { labelKey: 'onboarding.loading.s2' },
+  { labelKey: 'onboarding.loading.s3' },
+  { labelKey: 'onboarding.loading.s4' },
+  { labelKey: 'onboarding.loading.s5' },
+  { labelKey: 'onboarding.loading.s6' },
 ];
 
 const STEPS = [
-  { id: 1, title: 'Academic Profile',   subtitle: 'Tell us your class, stream, and goals',              icon: GraduationCap },
-  { id: 2, title: 'Strengths & Gaps',   subtitle: 'Where you shine and where you struggle',             icon: Brain },
-  { id: 3, title: 'Study Habits',       subtitle: 'How and when you study best',                        icon: Clock },
-  { id: 4, title: 'Performance Data',   subtitle: 'Your recent scores and test results',                icon: BarChart2 },
-  { id: 5, title: 'AI Learning Analysis', subtitle: 'A quick AI conversation to understand you deeply', icon: Sparkles },
+  { id: 1, titleKey: 'onboarding.steps.profile',       subtitleKey: 'onboarding.steps.profileSub',       icon: GraduationCap },
+  { id: 2, titleKey: 'onboarding.steps.strengths',     subtitleKey: 'onboarding.steps.strengthsSub',     icon: Brain },
+  { id: 3, titleKey: 'onboarding.steps.habits',        subtitleKey: 'onboarding.steps.habitsSub',        icon: Clock },
+  { id: 4, titleKey: 'onboarding.steps.performance',   subtitleKey: 'onboarding.steps.performanceSub',   icon: BarChart2 },
+  { id: 5, titleKey: 'onboarding.steps.aiAna',         subtitleKey: 'onboarding.steps.aiAnaSub',         icon: Sparkles },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -141,6 +142,7 @@ const RadioGroup = ({ options, value, onChange }) => (
 
 // Chip group with "Other" support
 const ChipGroup = ({ options, selected, onToggle, otherValue, onOtherChange, color = 'indigo' }) => {
+  const { t } = useTranslation();
   const [showOther, setShowOther] = useState(selected.includes('__other__'));
   const accent = { 
     indigo: 'border-indigo-500/50 bg-indigo-500/15 text-indigo-300', 
@@ -162,12 +164,12 @@ const ChipGroup = ({ options, selected, onToggle, otherValue, onOtherChange, col
           className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all duration-200 flex items-center gap-2 active:scale-95 ${
             showOther ? 'border-purple-500/50 bg-purple-500/15 text-purple-300' : 'text-gray-400 border-[#1f2937] bg-[#1f2937]/50 hover:bg-[#374151]'
           }`}>
-          {showOther && <CheckIcon />}+ Other
+          {showOther && <CheckIcon />}+ {t('onboarding.labels.otherOpt', '+ Other').replace('(specify)', '').trim()}
         </button>
       </div>
       {showOther && (
         <input value={otherValue} onChange={e => onOtherChange(e.target.value)}
-          placeholder="Type your subject / topic here..."
+          placeholder={t('onboarding.labels.typeSubj')}
           className="w-full bg-[#111827] border border-purple-500/30 rounded-xl px-4 py-3.5 text-sm text-gray-200
             placeholder-gray-600 focus:outline-none focus:border-purple-500/70 transition-all" />
       )}
@@ -178,7 +180,7 @@ const ChipGroup = ({ options, selected, onToggle, otherValue, onOtherChange, col
 // ─────────────────────────────────────────────────────────────
 //  Loading Screen
 // ─────────────────────────────────────────────────────────────
-const LoadingScreen = ({ activeStep }) => (
+const LoadingScreen = ({ activeStep, t }) => (
   <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-8">
     <div className="relative mb-10">
       <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-600/30 to-purple-600/30 flex items-center justify-center animate-pulse border border-indigo-500/20">
@@ -193,8 +195,8 @@ const LoadingScreen = ({ activeStep }) => (
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-purple-500" />
       </div>
     </div>
-    <h2 className="text-2xl font-bold text-white mb-2 text-center">EduVeda AI is Thinking...</h2>
-    <p className="text-gray-400 text-sm mb-10 text-center">Gemini is deeply analyzing your academic profile</p>
+    <h2 className="text-2xl font-bold text-white mb-2 text-center">{t('onboarding.loading.title')}</h2>
+    <p className="text-gray-400 text-sm mb-10 text-center">{t('onboarding.loading.sub')}</p>
     <div className="w-full max-w-xs space-y-3">
       {LOADING_STEPS.map((s, i) => {
         const done = i < activeStep, active = i === activeStep;
@@ -204,12 +206,12 @@ const LoadingScreen = ({ activeStep }) => (
               {done && <CheckIcon />}
               {active && <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />}
             </div>
-            <span className="text-sm font-medium">{s.label}</span>
+            <span className="text-sm font-medium">{t(s.labelKey)}</span>
           </div>
         );
       })}
     </div>
-    <p className="text-gray-600 text-[11px] mt-8">This may take 10–20 seconds. Please wait...</p>
+    <p className="text-gray-600 text-[11px] mt-8">{t('onboarding.loading.wait')}</p>
   </div>
 );
 
@@ -217,6 +219,7 @@ const LoadingScreen = ({ activeStep }) => (
 //  Main Component
 // ─────────────────────────────────────────────────────────────
 const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUpdating }) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [dir, setDir]   = useState(1);   // 1 = forward, -1 = backward
   const [isGenerating, setIsGenerating] = useState(false);
@@ -583,7 +586,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
     }
   };
 
-  if (isGenerating) return <LoadingScreen activeStep={loadingStep} />;
+  if (isGenerating) return <LoadingScreen activeStep={loadingStep} t={t} />;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-200 flex font-sans overflow-hidden">
@@ -623,7 +626,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                   {done ? <CheckIcon /> : <s.icon size={18} strokeWidth={1.8} />}
                 </div>
                 <div className="min-w-0">
-                  <p className={`text-sm font-bold truncate ${active ? 'text-indigo-100' : ''}`}>{s.title}</p>
+                  <p className={`text-sm font-bold truncate ${active ? 'text-indigo-100' : ''}`}>{t(s.titleKey)}</p>
                 </div>
               </button>
             );
@@ -667,9 +670,9 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
 
             {/* Step heading */}
             <div className="mb-10">
-              <p className="text-indigo-400 text-sm font-bold uppercase tracking-widest mb-2">Step {step + 1} of {STEPS.length}</p>
-              <h1 className="text-4xl font-black text-white mb-3 tracking-tight">{STEPS[step].title}</h1>
-              <p className="text-gray-400 text-base">{STEPS[step].subtitle}</p>
+              <p className="text-indigo-400 text-sm font-bold uppercase tracking-widest mb-2">{t('onboarding.stepOf', { step: step + 1, total: STEPS.length })}</p>
+              <h1 className="text-4xl font-black text-white mb-3 tracking-tight">{t(STEPS[step].titleKey)}</h1>
+              <p className="text-gray-400 text-base">{t(STEPS[step].subtitleKey)}</p>
             </div>
 
             {/* Error alert */}
@@ -688,15 +691,15 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                 <div className="space-y-10">
                   {/* section 1 */}
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Academic Info</h3>
+                    <h3 className="text-lg font-bold text-white mb-6">{t('onboarding.headers.academicInfo')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="mb-4">
-                        <Select label="Current Class / Year" value={data.currentClass} onChange={handleClassChange}
+                        <Select label={t('onboarding.labels.class')} value={data.currentClass} onChange={handleClassChange}
                           options={CLASS_OPTIONS}
                           placeholder="Select your class" />
                       </div>
                       <div className="mb-4">
-                        <Label>{streamLabel}{classCategory === 'ug' && <span className="text-indigo-400 normal-case font-normal text-xs ml-1">(as per your degree)</span>}</Label>
+                        <Label>{streamLabel}</Label>
                         {streamOptions.length > 0 ? (
                           <RadioGroup options={streamOptions} value={data.stream} onChange={handleStreamChange}/>
                         ) : (
@@ -709,7 +712,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                   <hr className="border-[#1f2937]/80" />
 
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-2">Goal Selection</h3>
+                    <h3 className="text-lg font-bold text-white mb-2">{t('onboarding.headers.goalSelection')}</h3>
                     <p className="text-xs text-gray-500 mb-5 font-medium">
                       {data.stream ? `Showing goals for ${data.stream}` : 'Select stream to see goals'}
                     </p>
@@ -737,9 +740,9 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
 
                   {/* section 3 */}
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Medium of Study</h3>
+                    <h3 className="text-lg font-bold text-white mb-6">{t('onboarding.headers.mediumOfStudy')}</h3>
                     <div className="mb-2">
-                      <Label>Language Preference</Label>
+                      <Label>{t('onboarding.labels.langPref')}</Label>
                       <RadioGroup options={['English', 'Hindi', 'Regional Language']} value={data.language} onChange={v => set('language', v)}/>
                     </div>
                   </div>
@@ -751,10 +754,10 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
               {step === 1 && (
                 <div className="space-y-10">
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Subject Competency</h3>
+                    <h3 className="text-lg font-bold text-white mb-6">{t('onboarding.headers.subjectComp')}</h3>
                     
                     <div className="mb-8">
-                      <Label>Strong Subjects <span className="text-indigo-400 normal-case font-normal text-xs ml-1">(Pick all that apply)</span></Label>
+                      <Label>{t('onboarding.labels.strongSubj')} <span className="text-indigo-400 normal-case font-normal text-xs ml-1">{t('onboarding.labels.pickAll')}</span></Label>
                       <ChipGroup
                         options={adaptiveSubjects.length ? adaptiveSubjects : ALL_SUBJECTS}
                         selected={data.strongSubjects}
@@ -765,7 +768,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                     </div>
 
                     <div className="mb-4">
-                      <Label>Weak Subjects <span className="text-red-400 normal-case font-normal text-xs ml-1">(Pick all that apply)</span></Label>
+                      <Label>{t('onboarding.labels.weakSubj')} <span className="text-red-400 normal-case font-normal text-xs ml-1">{t('onboarding.labels.pickAll')}</span></Label>
                       <ChipGroup
                         options={adaptiveSubjects.length ? adaptiveSubjects : ALL_SUBJECTS}
                         selected={data.weakSubjects}
@@ -779,14 +782,14 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                   <hr className="border-[#1f2937]/80" />
 
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Self Assessment</h3>
+                    <h3 className="text-lg font-bold text-white mb-6">{t('onboarding.headers.selfAssess')}</h3>
                     <div className="mb-8">
-                      <Label>Confidence in Academics</Label>
+                      <Label>{t('onboarding.labels.confidence')}</Label>
                       <RadioGroup options={['Low', 'Medium', 'High']} value={data.confidence} onChange={v => set('confidence', v)}/>
                     </div>
 
                     <div className="mb-4">
-                      <Label>What's your biggest academic challenge? <span className="normal-case font-normal text-gray-500">(Optional)</span></Label>
+                      <Label>{t('onboarding.labels.biggestChall')} <span className="normal-case font-normal text-gray-500">{t('onboarding.labels.optnl')}</span></Label>
                       <textarea value={data.biggestChallenge || ''} onChange={e => set('biggestChallenge', e.target.value)}
                         rows={3} placeholder="e.g. I struggle with long numerical problems under time pressure..."
                         className="w-full bg-[#1f2937]/50 border border-[#1f2937] rounded-xl px-5 py-4 text-sm text-gray-200
@@ -800,15 +803,15 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
               {step === 2 && (
                 <div className="space-y-10">
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Daily Routine</h3>
+                    <h3 className="text-lg font-bold text-white mb-6">{t('onboarding.headers.daily')}</h3>
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                       <div className="mb-2">
-                        <Select label="Study Hours per Day" value={data.studyHours} onChange={v => set('studyHours', v)}
+                        <Select label={t('onboarding.labels.studyHours')} value={data.studyHours} onChange={v => set('studyHours', v)}
                           options={['Less than 1 hour', '1–2 hours', '2–4 hours', '4–6 hours', '6–8 hours', '8+ hours']}
                           placeholder="Select regular hours" />
                       </div>
                       <div className="mb-2">
-                        <Label>Preferred Study Time</Label>
+                        <Label>{t('onboarding.labels.prefTime')}</Label>
                         <RadioGroup options={['Early Morning', 'Morning', 'Afternoon', 'Evening', 'Late Night']} value={data.studyTime} onChange={v => set('studyTime', v)}/>
                       </div>
                     </div>
@@ -817,9 +820,9 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                   <hr className="border-[#1f2937]/80" />
 
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Learning Approach</h3>
+                    <h3 className="text-lg font-bold text-white mb-6">{t('onboarding.headers.learningApp')}</h3>
                     <div className="mb-8">
-                      <Label>How do you absorb information best?</Label>
+                      <Label>{t('onboarding.labels.absorbInfo')}</Label>
                       <RadioGroup options={['Theory First', 'Practice First', 'Mixed Approach', 'Visual / Videos', 'Group Study', 'Other (specify)']} value={data.practiceStyle} onChange={v => set('practiceStyle', v)}/>
                       {data.practiceStyle === 'Other (specify)' && (
                         <input value={data.otherStudyStyle} onChange={e => set('otherStudyStyle', e.target.value)}
@@ -829,7 +832,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                     </div>
 
                     <div className="mb-2">
-                      <Label>Primary Study Resources <span className="normal-case font-normal text-gray-500">(Optional)</span></Label>
+                      <Label>{t('onboarding.labels.res')} <span className="normal-case font-normal text-gray-500">{t('onboarding.labels.optnl')}</span></Label>
                       <div className="flex flex-wrap gap-3">
                         {['YouTube', 'Textbooks', 'Notes', 'Coaching Classes', 'Mock Tests', 'Study Apps'].map(r => (
                           <button key={r} type="button" onClick={() => toggle('resources', r)}
@@ -849,11 +852,11 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
               {step === 3 && (
                 <div className="space-y-10">
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Academic History</h3>
+                    <h3 className="text-lg font-bold text-white mb-6">{t('onboarding.headers.acadHistory')}</h3>
                     
                     {/* ── File Upload ── */}
                     <div className="mb-10">
-                      <Label>Automated Document Extraction <span className="normal-case font-normal text-gray-500">(Optional PDF/IMG)</span></Label>
+                      <Label>{t('onboarding.labels.autoDoc')} <span className="normal-case font-normal text-gray-500">{t('onboarding.labels.optnl1')}</span></Label>
                       <div
                         onDrop={onDrop} onDragOver={e => e.preventDefault()}
                         onClick={() => fileInputRef.current?.click()}
@@ -874,8 +877,8 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                         ) : (
                           <>
                             <div className="flex justify-center mb-4 text-gray-500 group-hover:text-indigo-400 transition-colors"><UploadIcon/></div>
-                            <p className="text-base font-semibold text-gray-300 mb-1">Upload your Latest Test Result</p>
-                            <p className="text-sm text-gray-500">AI directly parses subjects, marks, and mistakes</p>
+                            <p className="text-base font-semibold text-gray-300 mb-1">{t('onboarding.labels.uploadResult')}</p>
+                            <p className="text-sm text-gray-500">{t('onboarding.labels.aiParse')}</p>
                           </>
                         )}
                       </div>
@@ -887,7 +890,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                         <Label>Manual Subject Performance</Label>
                         <button type="button" onClick={addEntry}
                           className="flex items-center gap-2 text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors border border-indigo-500/30 px-3 py-2 rounded-xl hover:bg-indigo-500/10 active:scale-95">
-                          <PlusIcon/> Add Subject Result
+                          <PlusIcon/> {t('onboarding.labels.addResult')}
                         </button>
                       </div>
                       <div className="space-y-4">
@@ -911,7 +914,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                               {[['Overall Score (%)', 'score', '0', '100', 'e.g. 72'], ['Correct Qs', 'correctQ', '0', '', 'e.g. 18'], ['Incorrect Qs', 'incorrectQ', '0', '', 'e.g. 7']].map(([lbl, fld, mn, mx, ph]) => (
                                 <div key={fld}>
-                                  <Label>{lbl}</Label>
+                                  <Label>{lbl === 'Overall Score (%)' ? t('onboarding.labels.overallScore') : lbl === 'Correct Qs' ? t('onboarding.labels.corrQs') : t('onboarding.labels.incorrQs')}</Label>
                                   <input type="number" min={mn} max={mx || undefined} value={entry[fld]} onChange={e => updateEntry(idx, fld, e.target.value)}
                                     placeholder={ph}
                                     className="w-full bg-[#111827] border border-[#374151] rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-indigo-500/50 transition-all"/>
@@ -927,11 +930,11 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                   <hr className="border-[#1f2937]/80" />
 
                   <div>
-                    <h3 className="text-lg font-bold text-white mb-6">Specific Bottlenecks</h3>
+                    <h3 className="text-lg font-bold text-white mb-6">{t('onboarding.headers.specific')}</h3>
                     
                     {/* ── Weak topics ── */}
                     <div className="mb-8">
-                      <Label>Granular Weak Topics / Chapters</Label>
+                      <Label>{t('onboarding.labels.granWeak')}</Label>
                       <ChipGroup
                         options={WEAK_TOPICS}
                         selected={data.weakTopics}
@@ -943,7 +946,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
 
                     {/* ── Mistake type ── */}
                     <div className="mb-4">
-                      <Label>Primary Type Of Mistake</Label>
+                      <Label>{t('onboarding.labels.priMistake')}</Label>
                       <RadioGroup options={['Conceptual Errors', 'Calculation Mistakes', 'Time Management', 'Silly Mistakes', 'Other (specify)']}
                         value={data.mistakeType} onChange={v => set('mistakeType', v)} />
                       {data.mistakeType === 'Other (specify)' && (
@@ -966,12 +969,12 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                       <Sparkles size={22} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white">EduVeda AI</h3>
-                      <p className="text-xs text-gray-500">Personalized learning profiler</p>
+                      <h3 className="text-lg font-bold text-white">{t('onboarding.chat.title')}</h3>
+                      <p className="text-xs text-gray-500">{t('onboarding.chat.subtitle')}</p>
                     </div>
                     <div className="ml-auto flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-xs text-green-400 font-medium">Online</span>
+                      <span className="text-xs text-green-400 font-medium">{t('onboarding.chat.online')}</span>
                     </div>
                   </div>
 
@@ -1019,7 +1022,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                     {/* Answer Options (shown below chat) */}
                     {!isAiTyping && chatIndex < AI_CHAT_QUESTIONS.length && chatMessages.length > 0 && (
                       <div className="px-5 pb-5 pt-3 border-t border-[#1f2937]/50">
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-3">Choose your answer</p>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-3">{t('onboarding.chat.chooseAnswer')}</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           {AI_CHAT_QUESTIONS[chatIndex].options.map((opt, oi) => (
                             <button key={oi} type="button"
@@ -1038,7 +1041,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                       <div className="px-5 pb-5 pt-3 border-t border-green-500/20">
                         <div className="flex items-center gap-3 text-green-400">
                           <CheckIcon />
-                          <span className="text-sm font-semibold">Analysis complete — click Generate to see your results</span>
+                          <span className="text-sm font-semibold">{t('onboarding.chat.analysisComplete')}</span>
                         </div>
                       </div>
                     )}
@@ -1046,7 +1049,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
 
                   {/* Progress indicator */}
                   <div className="flex items-center justify-between text-xs text-gray-500 px-1">
-                    <span>{Math.min(chatIndex, AI_CHAT_QUESTIONS.length)} of {AI_CHAT_QUESTIONS.length} questions</span>
+                    <span>{t('onboarding.chat.questionsOf', { current: Math.min(chatIndex, AI_CHAT_QUESTIONS.length), total: AI_CHAT_QUESTIONS.length })}</span>
                     <div className="flex gap-1.5">
                       {AI_CHAT_QUESTIONS.map((_, i) => (
                         <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -1070,7 +1073,7 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
           <div className="max-w-[900px] flex justify-between items-center mx-auto w-full">
             <button onClick={step === 0 ? onClose : goBack}
               className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-semibold px-5 py-3 rounded-xl border border-[#1f2937] hover:bg-[#1f2937]/50 active:scale-95">
-              <ArrowLeft/> {step === 0 ? 'Cancel' : 'Go Back'}
+              <ArrowLeft/> {step === 0 ? t('onboarding.cancel') : t('onboarding.goBack')}
             </button>
 
             {step < STEPS.length - 1 ? (
@@ -1078,14 +1081,14 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
                 className={`flex items-center gap-2 font-bold py-3 px-8 rounded-xl text-sm transition-all duration-300 ${
                   !canNext() ? 'bg-[#1f2937]/30 text-gray-600 border border-[#1f2937]/50 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] border border-indigo-500 active:scale-95'
                 }`}>
-                Continue <ArrowRight/>
+                {t('onboarding.continue')} <ArrowRight/>
               </button>
             ) : (
               <button onClick={handleSubmit} disabled={!canNext()}
                 className={`flex items-center gap-2 font-bold py-3 px-8 rounded-xl text-sm transition-all duration-300 ${
                   !canNext() ? 'bg-[#1f2937]/30 text-gray-600 border border-[#1f2937]/50 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] border border-indigo-500 active:scale-95'
                 }`}>
-                <SparkleIcon/> Generate AI Insights
+                <SparkleIcon/> {t('onboarding.generateAiInsights')}
               </button>
             )}
           </div>

@@ -3,9 +3,13 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Lottie from 'lottie-react';
 import animationData from '../assets/chatbot-animation.json';
+import { useTranslation } from 'react-i18next';
 
 const Hero = ({ onStartJourney }) => {
-  const features = [
+  const { t } = useTranslation();
+  
+  const featuresList = t('hero.features', { returnObjects: true });
+  const features = Array.isArray(featuresList) ? featuresList : [
     "Personalized AI career guidance",
     "Dynamic skill roadmap generation",
     "Smart learning recommendations"
@@ -23,18 +27,18 @@ const Hero = ({ onStartJourney }) => {
           className="z-10"
         >
           <div className="inline-flex items-center px-3 py-1 mb-5 text-xs font-medium rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 backdrop-blur-sm">
-            AI-Powered Learning Platform
+            {t('hero.badge')}
           </div>
 
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-5 leading-tight text-white/90">
-            AI Learning Path <br />
+            {t('hero.titlePart1')} <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400">
-              Generator
+              {t('hero.titlePart2')}
             </span>
           </h1>
 
           <p className="text-white/60 max-w-xl text-lg md:text-xl mb-6 leading-relaxed font-light">
-            Discover the best learning roadmap tailored to your goals using artificial intelligence.
+            {t('hero.subtitle')}
           </p>
 
           <div className="space-y-3 mb-6">
@@ -59,12 +63,12 @@ const Hero = ({ onStartJourney }) => {
               onClick={onStartJourney}
               className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold px-8 py-4 rounded-xl w-full sm:w-auto transition-all shadow-lg shadow-blue-500/20"
             >
-              <span>Get Started</span>
+              <span>{t('hero.getStarted')}</span>
               <ArrowRight className="w-5 h-5" />
             </motion.button>
             
             <button className="flex items-center justify-center px-8 py-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all text-white/80 font-medium w-full sm:w-auto bg-white/5 backdrop-blur-sm">
-              View Demo
+              {t('hero.viewDemo')}
             </button>
           </div>
         </motion.div>
@@ -83,7 +87,7 @@ const Hero = ({ onStartJourney }) => {
               filter: 'blur(40px)',
             }}
           />
-          <HeroLottie />
+          <HeroLottie t={t} />
         </motion.div>
 
       </div>
@@ -110,9 +114,9 @@ class LottieErrorBoundary extends React.Component {
       return (
         <div className="w-[420px] max-w-full h-[420px] flex flex-col items-center justify-center text-white/40 border border-white/10 rounded-3xl bg-white/5 backdrop-blur-sm">
           <div className="w-24 h-24 mb-4 rounded-full bg-white/10 flex items-center justify-center">
-            <span className="text-xs">Bot Offline</span>
+            <span className="text-xs">{this.props.botOffline || 'Bot Offline'}</span>
           </div>
-          <span className="text-sm font-medium">Animation Unavailable</span>
+          <span className="text-sm font-medium">{this.props.animationUnavailable || 'Animation Unavailable'}</span>
         </div>
       );
     }
@@ -121,11 +125,11 @@ class LottieErrorBoundary extends React.Component {
   }
 }
 
-function HeroLottie() {
+function HeroLottie({ t }) {
   if (!Lottie || !animationData) {
     return (
       <div className="w-[420px] max-w-full h-[420px] flex items-center justify-center text-white/40 border-2 border-white/20 rounded-3xl bg-white/10">
-        <span className="text-lg font-medium text-white">Bot Data Missing</span>
+        <span className="text-lg font-medium text-white">{t('hero.botDataMissing')}</span>
       </div>
     );
   }
@@ -145,7 +149,7 @@ function HeroLottie() {
         zIndex: 20
       }}
     >
-      <LottieErrorBoundary>
+      <LottieErrorBoundary botOffline={t('hero.botOffline')} animationUnavailable={t('hero.animationUnavailable')}>
         <LottieComponent
           animationData={rawData}
           loop={true}

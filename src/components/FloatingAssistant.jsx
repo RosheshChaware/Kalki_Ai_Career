@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, X, Bot, Sparkles, MessageCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -21,6 +22,7 @@ const TypingIndicator = () => (
 );
 
 const FloatingAssistant = ({ pageContext = 'home' }) => {
+  const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -97,7 +99,7 @@ const FloatingAssistant = ({ pageContext = 'home' }) => {
         body: JSON.stringify({
           message: text,
           history: historyForApi,
-          context: { focus: getContextFocus() },
+          context: { focus: getContextFocus(), language: i18n.language },
         }),
       });
 
