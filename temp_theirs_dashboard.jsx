@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getUserData } from '../lib/firestoreService';
+
+const API_URL = import.meta.env.VITE_API_URL;
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { jsPDF } from 'jspdf';
 import { 
@@ -32,8 +34,6 @@ import AdaptiveRoadmap from './AdaptiveRoadmap';
 import CareerPathView from './CareerPathView';
 import SettingsView from './SettingsView';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981'];
 const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, onOpenPracticeQuestions, onOpenCareerDetails, onMenuChange, aiResult: freshResult }) => {
   const { user } = useAuth();
@@ -61,55 +61,114 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
   const onReanalyzeRef = useRef(onReanalyze);
   useEffect(() => { onReanalyzeRef.current = onReanalyze; }, [onReanalyze]);
 
-  const handleUpdateData = () => {
-    if (onReanalyzeRef.current) {
-      onReanalyzeRef.current();
-    }
-  };
-
-  // Load from Firestore on mount — NO API call here
   useEffect(() => {
-    if (freshResult || !user) { setLoading(false); return; }
+    // Skip if we already have fresh data from onboarding, or user is not ready
+    if (freshResult || !user) {
+      setLoading(false);
+      return;
+    }
+    // Skip if this effect already ran ΓÇö prevents re-render loop
     if (analysisRanRef.current) return;
     analysisRanRef.current = true;
-    
+
+    console.log('[Dashboard] API CALL TRIGGERED: /analyze (mount, no freshResult)');
+
     (async () => {
       try {
         const userData = await getUserData(user.uid);
-        if (userData && userData.aiOutput) {
-          console.log('[Dashboard] Loaded AI data from Firestore.');
+        if (!userData) {
+          onReanalyzeRef.current?.();
+          return;
+        }
+
+        // Build an enriched payload matching what OnboardingFlow sends
+        const inputData = {
+          currentClass: userData.class || '',
+          stream: userData.stream || '',
+          targetGoal: userData.goal || '',
+          language: userData.language || 'English',
+          strongSubjectsAll: userData.strongSubjects || [],
+          weakSubjectsAll: userData.weakSubjects || [],
+          weakTopicsAll: userData.weakTopics || [],
+          biggestChallenge: '',
+          confidence: '',
+          subjectEntries: (userData.scores || []).map(s => ({
+            subject: s.subject,
+            score: String(s.score),
+            correctQ: String(s.correctQs || ''),
+            incorrectQ: String(s.incorrectQs || ''),
+          })),
+          aiChat: userData.aiChat || {},
+          hasFileUpload: false,
+        };
+
+        console.log('[Dashboard] Re-analyzing with saved user data:', inputData);
+
+        const res = await fetch(`${API_URL}/api/v1/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputData }),
+        });
+
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          console.error('[Dashboard] /analyze failed:', errBody);
+          // Show partial data from Firestore without fake AI fields
+          const subjectScores = (userData.scores || []).map(s => ({ subject: s.subject, score: s.score }));
           setData({
             inputData: {
               currentClass: userData.class || '',
               stream: userData.stream || '',
               targetGoal: userData.goal || '',
-              language: userData.language || '',
               strongSubjects: userData.strongSubjects || [],
               weakSubjects: userData.weakSubjects || [],
             },
-            aiOutput: userData.aiOutput,
+            aiOutput: {
+              strongSubjects: (userData.strongSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
+              weakSubjects: (userData.weakSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
+              subjectScores,
+              learningProfile: {},
+              learningIssues: [],
+              recommendedFocus: [],
+              careerSuggestions: [],
+              insights: { overallAnalysis: 'AI analysis unavailable. Click "Update Data" to retry.' },
+            },
             aiChat: userData.aiChat || null,
           });
-        } else {
-          // Fallback if no AI data found but user doc exists
-          handleUpdateData();
+          return;
         }
-      } catch (err) {
-        console.error('[Dashboard] Error loading data from Firestore:', err);
+
+        const aiOutput = await res.json();
+        console.log('[Dashboard] AI re-analysis result received successfully.');
+
+        setData({
+          inputData: {
+            currentClass: userData.class || '',
+            stream: userData.stream || '',
+            targetGoal: userData.goal || '',
+            language: userData.language || '',
+            strongSubjects: userData.strongSubjects || [],
+            weakSubjects: userData.weakSubjects || [],
+          },
+          aiOutput,
+          aiChat: userData.aiChat || null,
+        });
+      } catch (e) {
+        console.error('[Dashboard] Error fetching or re-analyzing:', e);
       } finally {
         setLoading(false);
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, freshResult]);
+  }, [user?.uid, freshResult]); // INTENTIONALLY excludes onReanalyze ΓÇö using ref to avoid re-render loop
 
-  // Load from LocalStorage on mount (notes only — NOT AI analysis)
+  // Load from LocalStorage on mount (notes only ΓÇö NOT AI analysis)
   useEffect(() => {
     const localNotes = JSON.parse(localStorage.getItem('ai_learning_notes') || '[]');
     setSavedNotes(localNotes);
   }, []);
 
-  // ── Derived values (computed before any early return so hooks below stay stable) ──
+  // ΓöÇΓöÇ Derived values (computed before any early return so hooks below stay stable) ΓöÇΓöÇ
   const ai = data?.aiOutput || {
     strongSubjects: [],
     weakSubjects: [],
@@ -149,7 +208,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
     });
   }, [data]);
 
-  // ── Early returns AFTER all hooks ──
+  // ΓöÇΓöÇ Early returns AFTER all hooks ΓöÇΓöÇ
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
@@ -158,8 +217,8 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
     );
   }
 
-  // ── All hooks and derived values are above this line ──
-  // ── Remaining derived values / handlers use the already-computed ai/avgScore/mistakeData ──
+  // ΓöÇΓöÇ All hooks and derived values are above this line ΓöÇΓöÇ
+  // ΓöÇΓöÇ Remaining derived values / handlers use the already-computed ai/avgScore/mistakeData ΓöÇΓöÇ
 
   const downloadPDF = async () => {
     setActionsOpen(false);
@@ -210,7 +269,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
       doc.line(20, y-3, 190, y-3);
       y += 3;
       if (ai.subjectScores && ai.subjectScores.length > 0) {
-          ai.subjectScores.forEach(ss => addText(`• ${ss.subject}: ${ss.score}%`, 11));
+          ai.subjectScores.forEach(ss => addText(`ΓÇó ${ss.subject}: ${ss.score}%`, 11));
       } else {
           addText('No subject data found.', 11);
       }
@@ -221,7 +280,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
       doc.line(20, y-3, 190, y-3);
       y += 3;
       if (ai.learningIssues && ai.learningIssues.length > 0) {
-          ai.learningIssues.forEach(iss => addText(`• [${iss.severity.toUpperCase()}] ${iss.type}`, 11));
+          ai.learningIssues.forEach(iss => addText(`ΓÇó [${iss.severity.toUpperCase()}] ${iss.type}`, 11));
       } else {
           addText('No major issues detected.', 11);
       }
@@ -272,7 +331,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-gray-200 font-sans flex text-sm selection:bg-indigo-500/30">
       
-      {/* ── LEFT SIDEBAR (FIXED) ── */}
+      {/* ΓöÇΓöÇ LEFT SIDEBAR (FIXED) ΓöÇΓöÇ */}
       <aside className="w-64 bg-[#111116] border-r border-[#ffffff0A] flex flex-col hidden md:flex sticky top-0 h-screen z-20">
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white">
@@ -307,10 +366,10 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
         </div>
       </aside>
 
-      {/* ── MAIN CONTENT AREA ── */}
+      {/* ΓöÇΓöÇ MAIN CONTENT AREA ΓöÇΓöÇ */}
       <main className="flex-1 flex flex-col min-w-0 max-h-screen overflow-y-auto">
         
-        {/* ── TOP SECTION ── */}
+        {/* ΓöÇΓöÇ TOP SECTION ΓöÇΓöÇ */}
         <header className="px-8 py-6 flex items-end justify-between sticky top-0 bg-[#0A0A0F]/90 backdrop-blur-md z-10 border-b border-[#ffffff0A]">
           <div>
             <h1 className="text-2xl font-bold text-white leading-tight">Hello, {displayName}</h1>
@@ -383,14 +442,14 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
         <div className="p-8 max-w-[1400px] w-full mx-auto space-y-8">
           
           {activeMenu === 'Roadmap' ? (
-            <AdaptiveRoadmap aiResult={data?.aiOutput} user={user} />
+            <AdaptiveRoadmap aiResult={data.aiOutput} user={user} />
           ) : activeMenu === 'Career Path' ? (
-            <CareerPathView aiResult={data?.aiOutput} />
+            <CareerPathView aiResult={data.aiOutput} />
           ) : activeMenu === 'Settings' ? (
-            <SettingsView user={user} inputData={data?.inputData} />
+            <SettingsView user={user} inputData={data.inputData} />
           ) : (
             <>
-              {/* ── ROW 1: SUMMARY CARDS ── */}
+              {/* ΓöÇΓöÇ ROW 1: SUMMARY CARDS ΓöÇΓöÇ */}
               <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div className="bg-[#111116] rounded-2xl p-5 border border-[#ffffff0A] flex items-center gap-4 hover:border-indigo-500/30 transition-colors">
                   <div className="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center shrink-0">
@@ -425,17 +484,17 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Learning Pace</p>
-                    <p className="text-xl font-bold text-white capitalize">{ai.learningProfile?.consistencyLevel || 'Not Analyzed'}</p>
+                    <p className="text-xl font-bold text-white capitalize">{ai.learningProfile?.consistencyLevel || 'Moderate'}</p>
                   </div>
                 </div>
               </section>
 
-              {/* ── ROW 2: CHART SECTION ── */}
+              {/* ΓöÇΓöÇ ROW 2: CHART SECTION ΓöÇΓöÇ */}
               <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-[#111116] rounded-2xl p-6 border border-[#ffffff0A]">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="font-bold text-white">Subject Performance</h2>
-                    <button onClick={handleUpdateData} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">Update Data</button>
+                    <button onClick={onReanalyze} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">Update Data</button>
                   </div>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -482,7 +541,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                 </div>
               </section>
 
-              {/* ── ROW 3: AI INSIGHTS ── */}
+              {/* ΓöÇΓöÇ ROW 3: AI INSIGHTS ΓöÇΓöÇ */}
               <section className="bg-[#111116] rounded-2xl p-8 border border-indigo-500/20 relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500 rounded-l-2xl" />
                 <div className="flex items-center gap-3 mb-4">
@@ -494,7 +553,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                 </p>
               </section>
 
-              {/* ── ROW 3.5: AI LEARNING PROFILE (from onboarding chat) ── */}
+              {/* ΓöÇΓöÇ ROW 3.5: AI LEARNING PROFILE (from onboarding chat) ΓöÇΓöÇ */}
               {data?.aiChat && Object.keys(data.aiChat).length > 0 && (
                 <section className="bg-[#111116] rounded-2xl border border-[#ffffff0A] overflow-hidden">
                   <div className="px-6 py-5 border-b border-[#ffffff0A] flex items-center gap-3">
@@ -508,11 +567,11 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                   </div>
                   <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[
-                      { key: 'learningStyle', label: 'Learning Style', icon: '🧠', color: 'indigo' },
-                      { key: 'studyBehavior', label: 'Study Behavior', icon: '📚', color: 'purple' },
-                      { key: 'focusLevel', label: 'Focus Level', icon: '🎯', color: 'blue' },
-                      { key: 'primaryStruggle', label: 'Key Problem', icon: '⚡', color: 'orange' },
-                      { key: 'motivation', label: 'Motivation', icon: '🔥', color: 'green' },
+                      { key: 'learningStyle', label: 'Learning Style', icon: '≡ƒºá', color: 'indigo' },
+                      { key: 'studyBehavior', label: 'Study Behavior', icon: '≡ƒôÜ', color: 'purple' },
+                      { key: 'focusLevel', label: 'Focus Level', icon: '≡ƒÄ»', color: 'blue' },
+                      { key: 'primaryStruggle', label: 'Key Problem', icon: 'ΓÜí', color: 'orange' },
+                      { key: 'motivation', label: 'Motivation', icon: '≡ƒöÑ', color: 'green' },
                     ].filter(item => data.aiChat[item.key]).map(item => {
                       const colorMap = {
                         indigo: { bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', text: 'text-indigo-300', dot: 'bg-indigo-500' },
@@ -536,7 +595,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                 </section>
               )}
 
-              {/* ── ROW 4: ACTION PLAN ── */}
+              {/* ΓöÇΓöÇ ROW 4: ACTION PLAN ΓöÇΓöÇ */}
               <section>
                 <h2 className="font-bold text-white mb-5 flex items-center gap-2">
                   <Target size={18} className="text-purple-400" /> Action Plan
@@ -564,7 +623,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
                 </div>
               </section>
 
-              {/* ── ROW 5: SMART RECOMMENDATIONS ── */}
+              {/* ΓöÇΓöÇ ROW 5: SMART RECOMMENDATIONS ΓöÇΓöÇ */}
               <section className="relative bg-[#111116]/80 backdrop-blur-sm border border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] rounded-2xl p-8 mb-8 mt-2">
                 <style>{`
                   @keyframes floatBot {
@@ -634,7 +693,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, 
         </div>
       </main>
 
-      {/* ── SLIDE-OVER PANELS ── */}
+      {/* ΓöÇΓöÇ SLIDE-OVER PANELS ΓöÇΓöÇ */}
       {/* Overlay Background */}
       {(isNotesOpen || isHistoryOpen) && (
         <div 

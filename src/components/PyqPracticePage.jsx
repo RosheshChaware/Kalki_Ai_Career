@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, FileText, ExternalLink, CheckCircle2, XCircle,
   ArrowRight, RotateCcw, Loader2, AlertCircle, RefreshCw,
@@ -91,7 +91,30 @@ const PyqPracticePage = ({ onClose, aiResult: freshResult }) => {
     }
   };
 
-  useEffect(() => { fetchPyq(); }, [user, freshResult]);
+  // ── CRITICAL FIX: only call API once per mount — never re-run on state changes ──
+  const hasFetchedRef = useRef(false);
+  const inFlightRef = useRef(false);
+
+  const safeFetchPyq = async () => {
+    if (inFlightRef.current) {
+      console.warn('[PyqPractice] API call blocked — already in-flight.');
+      return;
+    }
+    inFlightRef.current = true;
+    try {
+      await fetchPyq();
+    } finally {
+      inFlightRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+    console.log('[PyqPractice] API CALL TRIGGERED: /content/pyq (mount, once)');
+    safeFetchPyq();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty array: run ONCE on mount. user/freshResult available via closure.
 
   const handleSelectOption = (optIdx) => {
     if (isSubmitted) return;

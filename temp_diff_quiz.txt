@@ -1,0 +1,66 @@
+﻿diff --git a/temp_ours_quiz.jsx b/temp_theirs_quiz.jsx
+index 373a145..e4f6e3e 100644
+--- a/temp_ours_quiz.jsx
++++ b/temp_theirs_quiz.jsx
+@@ -1,12 +1,12 @@
+-∩╗┐import React, { useState, useEffect, useCallback } from 'react';
++∩╗┐import React, { useState, useEffect, useRef } from 'react';
+ import {
+   ArrowLeft, BrainCircuit, CheckCircle2, XCircle, RefreshCw, Zap,
+-  AlertCircle, BookOpen, ChevronDown, ChevronUp
++  Loader2, AlertCircle, BookOpen, ChevronDown, ChevronUp
+ } from 'lucide-react';
+ import { useAuth } from '../context/AuthContext';
+ import { getUserData } from '../lib/firestoreService';
+ 
+-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
++const API_URL = import.meta.env.VITE_API_URL;
+ 
+ const difficultyColors = {
+   Easy: 'text-green-400 bg-green-400/10 border-green-400/20',
+@@ -27,7 +27,7 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
+   const [isSubmitted, setIsSubmitted] = useState(false);
+   const [showExplanation, setShowExplanation] = useState({});
+ 
+-  const fetchQuiz = useCallback(async () => {
++  const fetchQuiz = async () => {
+     setLoading(true);
+     setError(null);
+     setQuestions([]);
+@@ -85,9 +85,34 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
+     } finally {
+       setLoading(false);
+     }
+-  }, [user, aiResult]);
++  };
++
++  // ╬ô├╢├ç╬ô├╢├ç CRITICAL FIX: only call API once per mount ╬ô├ç├╢ never re-run on state changes ╬ô├╢├ç╬ô├╢├ç
++  const hasFetchedRef = useRef(false);
++  const inFlightRef = useRef(false);
++
++  // Wrap fetchQuiz with an in-flight lock to block duplicate concurrent calls
++  const safeFetchQuiz = async () => {
++    if (inFlightRef.current) {
++      console.warn('[AdaptiveQuiz] API call blocked ╬ô├ç├╢ already in-flight.');
++      return;
++    }
++    inFlightRef.current = true;
++    try {
++      await fetchQuiz();
++    } finally {
++      inFlightRef.current = false;
++    }
++  };
+ 
+-  useEffect(() => { fetchQuiz(); }, [fetchQuiz]);
++  useEffect(() => {
++    // Guard: never call the API more than once per mount
++    if (hasFetchedRef.current) return;
++    hasFetchedRef.current = true;
++    console.log('[AdaptiveQuiz] API CALL TRIGGERED: /content/quiz (mount, once)');
++    safeFetchQuiz();
++  // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, []); // Empty array: run ONCE on mount. user/aiResult available via closure.
+ 
+   const handleSelectOption = (idx) => {
+     if (isSubmitted) return;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, BrainCircuit, CheckCircle2, XCircle, RefreshCw, Zap,
   AlertCircle, BookOpen, ChevronDown, ChevronUp
@@ -87,32 +87,7 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
     }
   }, [user, aiResult]);
 
-  // ── CRITICAL FIX: only call API once per mount — never re-run on state changes ──
-  const hasFetchedRef = useRef(false);
-  const inFlightRef = useRef(false);
-
-  // Wrap fetchQuiz with an in-flight lock to block duplicate concurrent calls
-  const safeFetchQuiz = async () => {
-    if (inFlightRef.current) {
-      console.warn('[AdaptiveQuiz] API call blocked — already in-flight.');
-      return;
-    }
-    inFlightRef.current = true;
-    try {
-      await fetchQuiz();
-    } finally {
-      inFlightRef.current = false;
-    }
-  };
-
-  useEffect(() => {
-    // Guard: never call the API more than once per mount
-    if (hasFetchedRef.current) return;
-    hasFetchedRef.current = true;
-    console.log('[AdaptiveQuiz] API CALL TRIGGERED: /content/quiz (mount, once)');
-    safeFetchQuiz();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty array: run ONCE on mount. user/aiResult available via closure.
+  useEffect(() => { fetchQuiz(); }, [fetchQuiz]);
 
   const handleSelectOption = (idx) => {
     if (isSubmitted) return;
@@ -154,7 +129,7 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
                 </span>
               </h1>
               <p className="text-xs text-gray-400">
-                {quizMeta.goal ? `${quizMeta.goal} · Focus: ${quizMeta.subject}` : 'Loading...'}
+                {quizMeta.goal ? `${quizMeta.goal} ┬╖ Focus: ${quizMeta.subject}` : 'Loading...'}
               </p>
             </div>
           </div>
@@ -203,7 +178,7 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
                   <span className="text-4xl font-black text-white">{scorePercent}%</span>
                 </div>
                 <h2 className="text-3xl font-black text-white mb-2">
-                  {scorePercent >= 70 ? '🎉 Excellent Work!' : scorePercent >= 40 ? '👍 Good Effort!' : '📚 Keep Practicing!'}
+                  {scorePercent >= 70 ? '≡ƒÄë Excellent Work!' : scorePercent >= 40 ? '≡ƒæì Good Effort!' : '≡ƒôÜ Keep Practicing!'}
                 </h2>
                 <p className="text-gray-400 mb-2">You scored <span className="text-white font-bold">{score}</span> out of <span className="text-white font-bold">{questions.length}</span></p>
                 <button
@@ -227,8 +202,8 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
                         {isCorrect ? <CheckCircle2 size={20} className="text-green-400 shrink-0 mt-0.5" /> : <XCircle size={20} className="text-red-400 shrink-0 mt-0.5" />}
                         <p className="text-white font-medium text-sm leading-relaxed">{q.text}</p>
                       </div>
-                      {!isCorrect && <p className="text-sm text-green-400 mb-1 ml-8">✓ Correct: <span className="font-bold">{q.options[q.correct]}</span></p>}
-                      {!isCorrect && userAns !== undefined && <p className="text-sm text-red-400 mb-2 ml-8">✗ Your answer: <span className="font-bold">{q.options[userAns]}</span></p>}
+                      {!isCorrect && <p className="text-sm text-green-400 mb-1 ml-8">Γ£ô Correct: <span className="font-bold">{q.options[q.correct]}</span></p>}
+                      {!isCorrect && userAns !== undefined && <p className="text-sm text-red-400 mb-2 ml-8">Γ£ù Your answer: <span className="font-bold">{q.options[userAns]}</span></p>}
                       {q.explanation && (
                         <button
                           className="ml-8 text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold"
@@ -300,7 +275,7 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
                   disabled={selectedAnswers[currentQIndex] === undefined}
                   className="px-10 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {currentQIndex === questions.length - 1 ? 'See Results' : 'Next Question →'}
+                  {currentQIndex === questions.length - 1 ? 'See Results' : 'Next Question ΓåÆ'}
                 </button>
               </div>
             </div>

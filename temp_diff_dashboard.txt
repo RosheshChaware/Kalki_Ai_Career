@@ -1,0 +1,243 @@
+﻿diff --git a/temp_ours_dashboard.jsx b/temp_theirs_dashboard.jsx
+index 00b6faa..1d6d730 100644
+--- a/temp_ours_dashboard.jsx
++++ b/temp_theirs_dashboard.jsx
+@@ -1,6 +1,8 @@
+-∩╗┐import React, { useState, useEffect } from 'react';
++∩╗┐import React, { useState, useEffect, useRef, useCallback } from 'react';
+ import { useAuth } from '../context/AuthContext';
+ import { getUserData } from '../lib/firestoreService';
++
++const API_URL = import.meta.env.VITE_API_URL;
+ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+ import { jsPDF } from 'jspdf';
+ import { 
+@@ -32,8 +34,6 @@ import AdaptiveRoadmap from './AdaptiveRoadmap';
+ import CareerPathView from './CareerPathView';
+ import SettingsView from './SettingsView';
+ 
+-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+-
+ const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b', '#10b981'];
+ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials, onOpenPracticeQuestions, onOpenCareerDetails, onMenuChange, aiResult: freshResult }) => {
+   const { user } = useAuth();
+@@ -54,38 +54,55 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials,
+   const [savedNotes, setSavedNotes] = useState([]);
+   const [historyList, setHistoryList] = useState([]);
+ 
+-  const handleUpdateData = async () => {
+-    if (!user) return;
+-    setLoading(true);
+-    try {
+-      const userData = await getUserData(user.uid);
+-      if (!userData) {
+-        onReanalyze?.();
+-        return;
+-      }
++  // Guard: ensure /analyze is called AT MOST ONCE per mount (prevents re-render loops)
++  const analysisRanRef = useRef(false);
+ 
+-      // Build an enriched payload matching what OnboardingFlow sends
+-      const inputData = {
+-        currentClass: userData.class || '',
+-        stream: userData.stream || '',
+-        targetGoal: userData.goal || '',
+-        language: userData.language || 'English',
+-        strongSubjectsAll: userData.strongSubjects || [],
+-        weakSubjectsAll: userData.weakSubjects || [],
+-        weakTopicsAll: userData.weakTopics || [],
+-        biggestChallenge: '',
+-        confidence: '',
+-        subjectEntries: (userData.scores || []).map(s => ({
+-          subject: s.subject,
+-          score: String(s.score),
+-          correctQ: String(s.correctQs || ''),
+-          incorrectQ: String(s.incorrectQs || ''),
+-        })),
+-        aiChat: userData.aiChat || {},
+-        hasFileUpload: false,
+-      };
++  // Stable reference to onReanalyze so it never causes useEffect to re-fire
++  const onReanalyzeRef = useRef(onReanalyze);
++  useEffect(() => { onReanalyzeRef.current = onReanalyze; }, [onReanalyze]);
+ 
+-      console.log('[Dashboard] Re-analyzing with saved user data:', inputData);
++  useEffect(() => {
++    // Skip if we already have fresh data from onboarding, or user is not ready
++    if (freshResult || !user) {
++      setLoading(false);
++      return;
++    }
++    // Skip if this effect already ran ╬ô├ç├╢ prevents re-render loop
++    if (analysisRanRef.current) return;
++    analysisRanRef.current = true;
++
++    console.log('[Dashboard] API CALL TRIGGERED: /analyze (mount, no freshResult)');
++
++    (async () => {
++      try {
++        const userData = await getUserData(user.uid);
++        if (!userData) {
++          onReanalyzeRef.current?.();
++          return;
++        }
++
++        // Build an enriched payload matching what OnboardingFlow sends
++        const inputData = {
++          currentClass: userData.class || '',
++          stream: userData.stream || '',
++          targetGoal: userData.goal || '',
++          language: userData.language || 'English',
++          strongSubjectsAll: userData.strongSubjects || [],
++          weakSubjectsAll: userData.weakSubjects || [],
++          weakTopicsAll: userData.weakTopics || [],
++          biggestChallenge: '',
++          confidence: '',
++          subjectEntries: (userData.scores || []).map(s => ({
++            subject: s.subject,
++            score: String(s.score),
++            correctQ: String(s.correctQs || ''),
++            incorrectQ: String(s.incorrectQs || ''),
++          })),
++          aiChat: userData.aiChat || {},
++          hasFileUpload: false,
++        };
++
++        console.log('[Dashboard] Re-analyzing with saved user data:', inputData);
+ 
+         const res = await fetch(`${API_URL}/api/v1/analyze`, {
+           method: 'POST',
+@@ -93,60 +110,57 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials,
+           body: JSON.stringify({ inputData }),
+         });
+ 
+-      if (!res.ok) {
+-        const errBody = await res.json().catch(() => ({}));
+-        console.error('[Dashboard] /analyze failed:', errBody);
+-        // Show partial data from Firestore without fake AI fields
+-        const subjectScores = (userData.scores || []).map(s => ({ subject: s.subject, score: s.score }));
++        if (!res.ok) {
++          const errBody = await res.json().catch(() => ({}));
++          console.error('[Dashboard] /analyze failed:', errBody);
++          // Show partial data from Firestore without fake AI fields
++          const subjectScores = (userData.scores || []).map(s => ({ subject: s.subject, score: s.score }));
++          setData({
++            inputData: {
++              currentClass: userData.class || '',
++              stream: userData.stream || '',
++              targetGoal: userData.goal || '',
++              strongSubjects: userData.strongSubjects || [],
++              weakSubjects: userData.weakSubjects || [],
++            },
++            aiOutput: {
++              strongSubjects: (userData.strongSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
++              weakSubjects: (userData.weakSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
++              subjectScores,
++              learningProfile: {},
++              learningIssues: [],
++              recommendedFocus: [],
++              careerSuggestions: [],
++              insights: { overallAnalysis: 'AI analysis unavailable. Click "Update Data" to retry.' },
++            },
++            aiChat: userData.aiChat || null,
++          });
++          return;
++        }
++
++        const aiOutput = await res.json();
++        console.log('[Dashboard] AI re-analysis result received successfully.');
++
+         setData({
+           inputData: {
+             currentClass: userData.class || '',
+             stream: userData.stream || '',
+             targetGoal: userData.goal || '',
++            language: userData.language || '',
+             strongSubjects: userData.strongSubjects || [],
+             weakSubjects: userData.weakSubjects || [],
+           },
+-          aiOutput: {
+-            strongSubjects: (userData.strongSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
+-            weakSubjects: (userData.weakSubjects || []).map(s => ({ subject: s, confidence: 0, reason: '' })),
+-            subjectScores,
+-            learningProfile: {},
+-            learningIssues: [],
+-            recommendedFocus: [],
+-            careerSuggestions: [],
+-            insights: { overallAnalysis: `AI analysis unavailable. Google Gemini API returned an error (likely 429 Too Many Requests limit reached). Please wait a while and click "Update Data" to retry.` },
+-          },
++          aiOutput,
+           aiChat: userData.aiChat || null,
+         });
+-        return;
++      } catch (e) {
++        console.error('[Dashboard] Error fetching or re-analyzing:', e);
++      } finally {
++        setLoading(false);
+       }
+-
+-      const aiOutput = await res.json();
+-      console.log('[Dashboard] AI re-analysis result:', aiOutput);
+-
+-      setData({
+-        inputData: {
+-          currentClass: userData.class || '',
+-          stream: userData.stream || '',
+-          targetGoal: userData.goal || '',
+-          language: userData.language || '',
+-          strongSubjects: userData.strongSubjects || [],
+-          weakSubjects: userData.weakSubjects || [],
+-        },
+-        aiOutput,
+-        aiChat: userData.aiChat || null,
+-      });
+-    } catch (e) {
+-      console.error('[Dashboard] Error fetching or re-analyzing:', e);
+-    } finally {
+-      setLoading(false);
+-    }
+-  };
+-
+-  useEffect(() => {
+-    if (freshResult) return;
+-    handleUpdateData();
+-  }, [user, freshResult]);
++    })();
++  // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [user?.uid, freshResult]); // INTENTIONALLY excludes onReanalyze ╬ô├ç├╢ using ref to avoid re-render loop
+ 
+   // Load from LocalStorage on mount (notes only ╬ô├ç├╢ NOT AI analysis)
+   useEffect(() => {
+@@ -428,11 +442,11 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials,
+         <div className="p-8 max-w-[1400px] w-full mx-auto space-y-8">
+           
+           {activeMenu === 'Roadmap' ? (
+-            <AdaptiveRoadmap aiResult={data?.aiOutput} user={user} />
++            <AdaptiveRoadmap aiResult={data.aiOutput} user={user} />
+           ) : activeMenu === 'Career Path' ? (
+-            <CareerPathView aiResult={data?.aiOutput} />
++            <CareerPathView aiResult={data.aiOutput} />
+           ) : activeMenu === 'Settings' ? (
+-            <SettingsView user={user} inputData={data?.inputData} />
++            <SettingsView user={user} inputData={data.inputData} />
+           ) : (
+             <>
+               {/* ╬ô├╢├ç╬ô├╢├ç ROW 1: SUMMARY CARDS ╬ô├╢├ç╬ô├╢├ç */}
+@@ -470,7 +484,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials,
+                   </div>
+                   <div>
+                     <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">Learning Pace</p>
+-                    <p className="text-xl font-bold text-white capitalize">{ai.learningProfile?.consistencyLevel || 'Not Analyzed'}</p>
++                    <p className="text-xl font-bold text-white capitalize">{ai.learningProfile?.consistencyLevel || 'Moderate'}</p>
+                   </div>
+                 </div>
+               </section>
+@@ -480,7 +494,7 @@ const PersonalizedLearningPage = ({ onClose, onReanalyze, onOpenStudyMaterials,
+                 <div className="bg-[#111116] rounded-2xl p-6 border border-[#ffffff0A]">
+                   <div className="flex justify-between items-center mb-6">
+                     <h2 className="font-bold text-white">Subject Performance</h2>
+-                    <button onClick={handleUpdateData} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">Update Data</button>
++                    <button onClick={onReanalyze} className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">Update Data</button>
+                   </div>
+                   <div className="h-64">
+                     <ResponsiveContainer width="100%" height="100%">

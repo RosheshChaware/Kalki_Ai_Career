@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText, Video, Globe, ArrowLeft, BookOpen, Target, Sparkles,
-  ExternalLink, Loader2, AlertCircle, Brain, ChevronDown, ChevronUp
+  ExternalLink, Loader2, AlertCircle, Brain
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserData } from '../lib/firestoreService';
@@ -59,43 +59,69 @@ const ResourceCard = ({ item }) => (
   </div>
 );
 
-// ── Topic Card (accordion) ─────────────────────────────────────────────────────
-const TopicCard = ({ topic }) => {
-  const [open, setOpen] = useState(false);
+// ── Topic Grid Card (flat, no accordion) ──────────────────────────────────────
+const TopicGridCard = ({ topic }) => {
+  const dotColor =
+    topic.priority === 'high' ? 'bg-red-400' :
+    topic.priority === 'low'  ? 'bg-green-400' : 'bg-yellow-400';
+  const badgeColor =
+    topic.priority === 'high'
+      ? 'text-red-400 bg-red-400/10 border-red-400/20'
+      : topic.priority === 'low'
+      ? 'text-green-400 bg-green-400/10 border-green-400/20'
+      : 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+
   return (
-    <div className="bg-[#1C1C24] rounded-2xl border border-[#ffffff0A] overflow-hidden transition-all">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between p-5 hover:bg-[#ffffff05] transition-colors"
-      >
-        <div className="flex items-center gap-3 text-left">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${topic.priority === 'high' ? 'bg-red-400' : topic.priority === 'low' ? 'bg-green-400' : 'bg-yellow-400'}`} />
-          <div>
-            <p className="text-white font-bold leading-tight">{topic.topic}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">{topic.subject}</p>
+    <div className="bg-[#1C1C24] rounded-2xl border border-[#ffffff0A] flex flex-col hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 transition-all duration-300 group overflow-hidden">
+      {/* Top accent bar — colour reflects priority */}
+      <div className={`h-1.5 w-full ${
+        topic.priority === 'high'
+          ? 'bg-gradient-to-r from-red-500/60 to-transparent'
+          : topic.priority === 'low'
+          ? 'bg-gradient-to-r from-green-500/60 to-transparent'
+          : 'bg-gradient-to-r from-yellow-500/60 to-transparent'
+      }`} />
+
+      <div className="p-5 flex-1 flex flex-col gap-3">
+        {/* Priority badge + dot */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+            {topic.subject && (
+              <span className="text-[11px] text-indigo-300/70 font-semibold">
+                {topic.subject}
+              </span>
+            )}
           </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${priorityColor(topic.priority)}`}>
+          <span className={`text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full border ${badgeColor}`}>
             {topic.priority}
           </span>
-          {open ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
         </div>
-      </button>
-      {open && (
-        <div className="px-5 pb-5 border-t border-[#ffffff0A] pt-4 space-y-3">
-          <p className="text-gray-300 text-sm leading-relaxed">{topic.explanation}</p>
-          {topic.keyPoints?.length > 0 && (
-            <ul className="space-y-2">
-              {topic.keyPoints.map((pt, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
-                  <span className="text-indigo-400 mt-0.5">•</span> {pt}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+
+        {/* Topic name */}
+        <h3 className="text-white font-bold text-base leading-snug group-hover:text-indigo-300 transition-colors">
+          {topic.topic}
+        </h3>
+
+        {/* Explanation */}
+        {topic.explanation && (
+          <p className="text-[13px] text-gray-400 leading-relaxed line-clamp-3">
+            {topic.explanation}
+          </p>
+        )}
+
+        {/* Key points */}
+        {topic.keyPoints?.length > 0 && (
+          <ul className="mt-auto space-y-1.5">
+            {topic.keyPoints.slice(0, 3).map((pt, i) => (
+              <li key={i} className="flex items-start gap-2 text-[12px] text-gray-400">
+                <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+                <span>{pt}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 };
@@ -124,7 +150,13 @@ const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
   const [content, setContent] = useState(null);
   const [profileMeta, setProfileMeta] = useState({ goal: '', cls: '' });
 
+  const hasFetchedRef = useRef(false);
+
   useEffect(() => {
+    // Guard: never call the API more than once per mount
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -158,6 +190,8 @@ const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
 
         setProfileMeta({ goal, cls });
 
+        console.log('[StudyMaterials] API CALL TRIGGERED: /content/study-materials for goal:', goal);
+
         const res = await fetch(`${API_URL}/api/v1/content/study-materials`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -179,7 +213,8 @@ const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
       }
     };
     load();
-  }, [user, freshResult]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty array: run ONCE on mount only. user/freshResult available via closure.
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-gray-200 font-sans selection:bg-indigo-500/30 pb-20">
@@ -252,17 +287,6 @@ const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
       {!loading && !error && content && (
         <main className="max-w-[1200px] mx-auto px-6 py-10">
 
-          {/* Study Topics (AI explanations) */}
-          {content.studyTopics?.length > 0 && (
-            <Section title="AI Topic Explanations" subtitle={`Key concepts for ${profileMeta.goal}`} icon={Brain}>
-              <div className="space-y-3">
-                {content.studyTopics.map((topic, i) => (
-                  <TopicCard key={i} topic={topic} />
-                ))}
-              </div>
-            </Section>
-          )}
-
           {/* Concept Learning (videos) */}
           {content.conceptLearning?.length > 0 && (
             <Section title="Concept Learning" subtitle="Video lectures and foundational resources" icon={Video}>
@@ -291,6 +315,21 @@ const StudyMaterialsPage = ({ onClose, aiResult: freshResult }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {content.revisionNotes.map((item, i) => (
                   <ResourceCard key={i} item={item} />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Weak Topics / Focus Areas — moved to bottom, flat grid card layout */}
+          {content.studyTopics?.length > 0 && (
+            <Section
+              title="Weak Topics / Focus Areas"
+              subtitle={`Personalised focus areas for ${profileMeta.goal}`}
+              icon={Brain}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {content.studyTopics.map((topic, i) => (
+                  <TopicGridCard key={i} topic={topic} />
                 ))}
               </div>
             </Section>

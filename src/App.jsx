@@ -40,6 +40,7 @@ function App() {
   const [authMode, setAuthMode] = useState('signin');
   const [aiResult, setAiResult] = useState(null);
   const [currentSubPage, setCurrentSubPage] = useState('Dashboard');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const openAuth = (mode = 'signin') => {
     setAuthMode(mode);
@@ -92,10 +93,12 @@ function App() {
           setShowLearningPage(true);
           setCurrentSubPage('Dashboard');
         } else {
+          setIsUpdating(false);
           setShowOnboarding(true);
         }
       } catch (err) {
         console.error('[App] Error checking user:', err);
+        setIsUpdating(false);
         setShowOnboarding(true);
       }
     } else {
@@ -116,9 +119,11 @@ function App() {
             setShowLearningPage(true);
             setCurrentSubPage('Dashboard');
           } else {
+            setIsUpdating(false);
             setShowOnboarding(true);
           }
         } catch {
+          setIsUpdating(false);
           setShowOnboarding(true);
         }
       })();
@@ -193,6 +198,7 @@ function App() {
         userId={user?.uid}
         userName={user?.displayName || ''}
         userEmail={user?.email || ''}
+        isUpdating={isUpdating}
         onComplete={(payload) => {
           setAiResult(payload);
           setShowOnboarding(false);
@@ -215,6 +221,7 @@ function App() {
           onReanalyze={() => {
             setAiResult(null);
             setShowLearningPage(false);
+            setIsUpdating(true);
             setShowOnboarding(true);
           }}
           onMenuChange={setCurrentSubPage}

@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, BrainCircuit, CheckCircle2, XCircle, RefreshCw, Zap,
-  AlertCircle, BookOpen, ChevronDown, ChevronUp
+  Loader2, AlertCircle, BookOpen, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserData } from '../lib/firestoreService';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const difficultyColors = {
   Easy: 'text-green-400 bg-green-400/10 border-green-400/20',
@@ -27,7 +27,7 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showExplanation, setShowExplanation] = useState({});
 
-  const fetchQuiz = useCallback(async () => {
+  const fetchQuiz = async () => {
     setLoading(true);
     setError(null);
     setQuestions([]);
@@ -85,16 +85,16 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
     } finally {
       setLoading(false);
     }
-  }, [user, aiResult]);
+  };
 
-  // ── CRITICAL FIX: only call API once per mount — never re-run on state changes ──
+  // ΓöÇΓöÇ CRITICAL FIX: only call API once per mount ΓÇö never re-run on state changes ΓöÇΓöÇ
   const hasFetchedRef = useRef(false);
   const inFlightRef = useRef(false);
 
   // Wrap fetchQuiz with an in-flight lock to block duplicate concurrent calls
   const safeFetchQuiz = async () => {
     if (inFlightRef.current) {
-      console.warn('[AdaptiveQuiz] API call blocked — already in-flight.');
+      console.warn('[AdaptiveQuiz] API call blocked ΓÇö already in-flight.');
       return;
     }
     inFlightRef.current = true;
@@ -154,7 +154,7 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
                 </span>
               </h1>
               <p className="text-xs text-gray-400">
-                {quizMeta.goal ? `${quizMeta.goal} · Focus: ${quizMeta.subject}` : 'Loading...'}
+                {quizMeta.goal ? `${quizMeta.goal} ┬╖ Focus: ${quizMeta.subject}` : 'Loading...'}
               </p>
             </div>
           </div>
@@ -203,7 +203,7 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
                   <span className="text-4xl font-black text-white">{scorePercent}%</span>
                 </div>
                 <h2 className="text-3xl font-black text-white mb-2">
-                  {scorePercent >= 70 ? '🎉 Excellent Work!' : scorePercent >= 40 ? '👍 Good Effort!' : '📚 Keep Practicing!'}
+                  {scorePercent >= 70 ? '≡ƒÄë Excellent Work!' : scorePercent >= 40 ? '≡ƒæì Good Effort!' : '≡ƒôÜ Keep Practicing!'}
                 </h2>
                 <p className="text-gray-400 mb-2">You scored <span className="text-white font-bold">{score}</span> out of <span className="text-white font-bold">{questions.length}</span></p>
                 <button
@@ -227,8 +227,8 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
                         {isCorrect ? <CheckCircle2 size={20} className="text-green-400 shrink-0 mt-0.5" /> : <XCircle size={20} className="text-red-400 shrink-0 mt-0.5" />}
                         <p className="text-white font-medium text-sm leading-relaxed">{q.text}</p>
                       </div>
-                      {!isCorrect && <p className="text-sm text-green-400 mb-1 ml-8">✓ Correct: <span className="font-bold">{q.options[q.correct]}</span></p>}
-                      {!isCorrect && userAns !== undefined && <p className="text-sm text-red-400 mb-2 ml-8">✗ Your answer: <span className="font-bold">{q.options[userAns]}</span></p>}
+                      {!isCorrect && <p className="text-sm text-green-400 mb-1 ml-8">Γ£ô Correct: <span className="font-bold">{q.options[q.correct]}</span></p>}
+                      {!isCorrect && userAns !== undefined && <p className="text-sm text-red-400 mb-2 ml-8">Γ£ù Your answer: <span className="font-bold">{q.options[userAns]}</span></p>}
                       {q.explanation && (
                         <button
                           className="ml-8 text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold"
@@ -300,7 +300,7 @@ const AdaptiveQuizPage = ({ onClose, aiResult }) => {
                   disabled={selectedAnswers[currentQIndex] === undefined}
                   className="px-10 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {currentQIndex === questions.length - 1 ? 'See Results' : 'Next Question →'}
+                  {currentQIndex === questions.length - 1 ? 'See Results' : 'Next Question ΓåÆ'}
                 </button>
               </div>
             </div>

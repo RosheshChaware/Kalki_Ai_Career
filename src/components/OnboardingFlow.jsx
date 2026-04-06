@@ -216,7 +216,7 @@ const LoadingScreen = ({ activeStep }) => (
 // ─────────────────────────────────────────────────────────────
 //  Main Component
 // ─────────────────────────────────────────────────────────────
-const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail }) => {
+const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUpdating }) => {
   const [step, setStep] = useState(0);
   const [dir, setDir]   = useState(1);   // 1 = forward, -1 = backward
   const [isGenerating, setIsGenerating] = useState(false);
@@ -248,6 +248,45 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail }) =>
   const [isAiTyping, setIsAiTyping] = useState(false);
   const chatEndRef = useRef(null);
   const chatInitialized = useRef(false);
+
+  useEffect(() => {
+    if (isUpdating) {
+      console.log("Updating existing Firestore document (Onboarding as updater)");
+    } else {
+      console.log("Creating new document (Onboarding)");
+    }
+  }, [isUpdating]);
+
+  useEffect(() => {
+    if (isUpdating && userId && userId !== 'anonymous') {
+      console.log("Pre-filling data for update flow");
+      import('../lib/firestoreService').then(({ getUserData }) => {
+        getUserData(userId).then(existing => {
+          if (existing) {
+            setData(p => ({
+              ...p,
+              currentClass: existing.class || '',
+              stream: existing.stream || '',
+              targetGoal: existing.goal || '',
+              strongSubjects: existing.strongSubjects || [],
+              weakSubjects: existing.weakSubjects || [],
+              weakTopics: existing.weakTopics || [],
+              subjectEntries: existing.scores?.length > 0 
+                ? existing.scores.map(s => ({
+                    subject: s.subject || '',
+                    score: s.score?.toString() || '',
+                    correctQ: s.correctQs?.toString() || '',
+                    incorrectQ: s.incorrectQs?.toString() || '',
+                    accuracy: ''
+                  }))
+                : p.subjectEntries,
+              aiChat: existing.aiChat || {},
+            }));
+          }
+        });
+      });
+    }
+  }, [isUpdating, userId]);
 
   const fileInputRef = useRef(null);
 
@@ -527,7 +566,16 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail }) =>
       }
 
       const aiOutput = await res.json();
+      console.log("API CALLED");
       console.log('[API] Response from /api/v1/analyze:', JSON.stringify(aiOutput, null, 2));
+
+      if (uid !== 'anonymous') {
+        console.log("Updating Firestore");
+        console.log("User ID:", uid);
+        const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+        const { db } = await import('../firebase');
+        await setDoc(doc(db, 'users', uid), { aiOutput, updatedAt: serverTimestamp() }, { merge: true });
+      }
 
       clearInterval(iv);
       setLoadingStep(LOADING_STEPS.length - 1);
