@@ -3,6 +3,7 @@ import { User as UserIcon, Moon, Sun, Globe, LogOut, Save, ShieldAlert, CheckCir
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { updateProfile } from '../lib/firestoreService';
+import { getGoalsForStream, CLASS_OPTIONS, STREAM_OPTIONS, STREAM_LABELS, getClassCategory } from '../data/goalIntelligence';
 
 const SettingsView = ({ user, inputData }) => {
   const [profile, setProfile] = useState({
@@ -36,9 +37,32 @@ const SettingsView = ({ user, inputData }) => {
   }, [language]);
 
   const handleProfileChange = (e) => {
-    setProfile(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setProfile(prev => {
+      const newProfile = { ...prev, [name]: value };
+      
+      // Cascade resets
+      if (name === 'currentClass') {
+        const oldCat = getClassCategory(prev.currentClass);
+        const newCat = getClassCategory(value);
+        if (oldCat !== newCat) {
+          newProfile.stream = '';
+          newProfile.targetGoal = '';
+        }
+      }
+      if (name === 'stream') {
+        newProfile.targetGoal = '';
+      }
+      
+      return newProfile;
+    });
     setSaveSuccess(false);
   };
+
+  const classCategory = getClassCategory(profile.currentClass);
+  const streamOptions = STREAM_OPTIONS[classCategory] || [];
+  const streamLabel   = STREAM_LABELS[classCategory] || 'Current Stream';
+  const goalOptions = profile.stream ? getGoalsForStream(profile.stream) : [];
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -107,31 +131,25 @@ const SettingsView = ({ user, inputData }) => {
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-gray-500 uppercase">Current Class</label>
             <select name="currentClass" value={profile.currentClass} onChange={handleProfileChange} className="w-full bg-[#1C1C24] border border-[#ffffff10] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
-              <option value="9">Class 9</option>
-              <option value="10">Class 10</option>
-              <option value="11">Class 11</option>
-              <option value="12">Class 12</option>
-              <option value="College">College</option>
+              <option value="" disabled>Select Class</option>
+              {CLASS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-500 uppercase">Current Stream</label>
-            <select name="stream" value={profile.stream} onChange={handleProfileChange} className="w-full bg-[#1C1C24] border border-[#ffffff10] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
-              <option value="PCM">PCM (Science)</option>
-              <option value="PCB">PCB (Science)</option>
-              <option value="Commerce">Commerce</option>
-              <option value="Arts">Humanities / Arts</option>
-              <option value="Other">Other</option>
+            <label className="text-xs font-bold text-gray-500 uppercase">{streamLabel}</label>
+            <select name="stream" value={profile.stream} onChange={handleProfileChange} disabled={!streamOptions.length} className="w-full bg-[#1C1C24] border border-[#ffffff10] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50">
+              <option value="" disabled>{streamOptions.length ? 'Select...' : 'Select class first'}</option>
+              {streamOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </div>
 
           <div className="space-y-1.5 md:col-span-2">
             <label className="text-xs font-bold text-gray-500 uppercase">Target Goal</label>
-            <input 
-              name="targetGoal" value={profile.targetGoal} onChange={handleProfileChange} placeholder="e.g. JEE, NEET, Software Engineer"
-              className="w-full bg-[#1C1C24] border border-[#ffffff10] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
-            />
+            <select name="targetGoal" value={profile.targetGoal} onChange={handleProfileChange} disabled={!goalOptions.length} className="w-full bg-[#1C1C24] border border-[#ffffff10] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50">
+              <option value="" disabled>{goalOptions.length ? 'Select Goal...' : 'Select stream first'}</option>
+              {goalOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
           </div>
           
           <div className="md:col-span-2 flex items-center justify-end mt-2">

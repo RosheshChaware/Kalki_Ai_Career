@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { saveOnboardingData } from '../lib/firestoreService';
 import { useTranslation } from 'react-i18next';
 import { GraduationCap, Brain, Clock, BarChart2, Sparkles } from 'lucide-react';
-import { getGoalsForStream, getSubjectsForGoal } from '../data/goalIntelligence';
+import { getGoalsForStream, getSubjectsForGoal, CLASS_OPTIONS, STREAM_OPTIONS, STREAM_LABELS, getClassCategory } from '../data/goalIntelligence';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -303,27 +303,6 @@ const OnboardingFlow = ({ onComplete, onClose, userId, userName, userEmail, isUp
   const adaptiveSubjects = data.targetGoal ? getSubjectsForGoal(data.targetGoal) : ALL_SUBJECTS;
 
   // ── Dynamic Class → Stream dependency ──
-  const CLASS_OPTIONS = ['Class 11', 'Class 12', '1st Year UG', '2nd Year UG', '3rd Year UG', '4th Year UG', 'Postgraduate'];
-
-  const getClassCategory = (cls) => {
-    if (!cls) return null;
-    if (cls.startsWith('Class')) return 'school';
-    if (cls.includes('UG')) return 'ug';
-    if (cls === 'Postgraduate') return 'pg';
-    return null;
-  };
-
-  const STREAM_OPTIONS = {
-    school: ['Science', 'Commerce', 'Arts / Humanities', 'Other'],
-    ug:     ['Engineering (B.Tech)', 'Business (BBA)', 'Science (BSc)', 'Arts (BA)', 'Other'],
-    pg:     ['MBA', 'MTech', 'MSc', 'MA', 'MCA', 'Other'],
-  };
-
-  const STREAM_LABELS = {
-    school: 'Stream',
-    ug:     'Field of Study',
-    pg:     'Specialization',
-  };
 
   const classCategory = getClassCategory(data.currentClass);
   const streamOptions = STREAM_OPTIONS[classCategory] || [];

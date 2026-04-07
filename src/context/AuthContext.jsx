@@ -9,6 +9,7 @@ import {
   sendEmailVerification,
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
+import { useAutoLogout } from '../hooks/useAutoLogout';
 
 const API_URL = import.meta.env.VITE_API_URL;
 console.log('API URL:', API_URL);
@@ -18,6 +19,9 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Auto-logout user after 15 minutes of inactivity across tabs
+  useAutoLogout(user, 15);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {

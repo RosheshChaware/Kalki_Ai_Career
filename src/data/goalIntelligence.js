@@ -3,6 +3,33 @@
 //  Used by: OnboardingFlow, StudyMaterialsPage, PracticeQuestionsPage
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── 0. Class & Stream Options ──────────────────────────────────────────────────
+export const CLASS_OPTIONS = [
+  'Class 11', 'Class 12', 
+  '1st Year UG', '2nd Year UG', '3rd Year UG', '4th Year UG', 
+  'Postgraduate'
+];
+
+export const getClassCategory = (cls) => {
+  if (!cls) return null;
+  if (cls.startsWith('Class')) return 'school';
+  if (cls.includes('UG')) return 'ug';
+  if (cls === 'Postgraduate') return 'pg';
+  return null;
+};
+
+export const STREAM_OPTIONS = {
+  school: ['Science', 'Commerce', 'Arts / Humanities', 'Other'],
+  ug:     ['Engineering (B.Tech)', 'Business (BBA)', 'Science (BSc)', 'Arts (BA)', 'Other'],
+  pg:     ['MBA', 'MTech', 'MSc', 'MA', 'MCA', 'Other'],
+};
+
+export const STREAM_LABELS = {
+  school: 'Stream',
+  ug:     'Field of Study',
+  pg:     'Specialization',
+};
+
 // ── 1. Stream → Goals mapping ──────────────────────────────────────────────
 export const STREAM_GOALS = {
   // School streams
